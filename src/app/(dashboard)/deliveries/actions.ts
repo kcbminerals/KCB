@@ -1,0 +1,75 @@
+"use server";
+
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { verifySession } from "@/lib/auth";
+import { createDelivery, updateDelivery, deleteDelivery } from "@/lib/queries";
+
+const deliverySchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  distributorId: z.coerce.number().int().positive("Choose a distributor"),
+  vehicleId: z.coerce.number().int().positive().optional(),
+  jarsLoaded: z.coerce.number().int().min(0, "Must be 0 or more"),
+  jarsReturned: z.coerce.number().int().min(0, "Must be 0 or more"),
+  pricePerJar: z.coerce.number().min(0, "Must be 0 or more"),
+  paidAmount: z.coerce.number().min(0, "Must be 0 or more"),
+  notes: z.string().trim().optional(),
+});
+
+export type DeliveryFormState = { error?: string; savedAt?: number } | undefined;
+
+function parseDelivery(formData: FormData) {
+  const vehicleRaw = formData.get("vehicleId");
+  return deliverySchema.safeParse({
+    date: formData.get("date"),
+    distributorId: formData.get("distributorId"),
+    vehicleId: vehicleRaw ? vehicleRaw : undefined,
+    jarsLoaded: formData.get("jarsLoaded"),
+    jarsReturned: formData.get("jarsReturned"),
+    pricePerJar: formData.get("pricePerJar"),
+    paidAmount: formData.get("paidAmount"),
+    notes: formData.get("notes"),
+  });
+}
+
+export async function createDeliveryAction(
+  _prevState: DeliveryFormState,
+  formData: FormData
+): Promise<DeliveryFormState> {
+  await verifySession();
+  const parsed = parseDelivery(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  createDelivery(parsed.data);
+  revalidatePath("/deliveries");
+  revalidatePath("/");
+  revalidatePath("/distributors");
+  return { savedAt: Date.now() };
+}
+
+export async function updateDeliveryAction(
+  id: number,
+  _prevState: DeliveryFormState,
+  formData: FormData
+): Promise<DeliveryFormState> {
+  await verifySession();
+  const parsed = parseDelivery(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  updateDelivery(id, parsed.data);
+  revalidatePath("/deliveries");
+  revalidatePath("/");
+  revalidatePath("/distributors");
+  redirect("/deliveries");
+}
+
+export async function deleteDeliveryAction(id: number) {
+  await verifySession();
+  deleteDelivery(id);
+  revalidatePath("/deliveries");
+  revalidatePath("/");
+  revalidatePath("/distributors");
+}
