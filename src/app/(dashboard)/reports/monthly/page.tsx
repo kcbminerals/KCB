@@ -18,7 +18,7 @@ export default async function MonthlyReportPage({
   const { month } = await searchParams;
   const anchor = month && /^\d{4}-\d{2}$/.test(month) ? month : currentYearMonth();
   const { from, to } = monthRange(anchor);
-  const report = getReport(from, to);
+  const report = await getReport(from, to);
 
   const [year, monthNum] = anchor.split("-").map(Number);
   const prevMonth = shiftMonth(anchor, -1);

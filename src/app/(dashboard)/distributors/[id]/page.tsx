@@ -17,11 +17,11 @@ export default async function DistributorDetailPage({
   await verifySession();
   const { id } = await params;
   const distributorId = Number(id);
-  const distributor = getDistributorSummary(distributorId);
+  const distributor = await getDistributorSummary(distributorId);
   if (!distributor) notFound();
 
-  const deliveries = listDeliveries({ distributorId });
-  const payments = listPayments({ distributorId });
+  const deliveries = await listDeliveries({ distributorId });
+  const payments = await listPayments({ distributorId });
 
   type Entry = {
     date: string;

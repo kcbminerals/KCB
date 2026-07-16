@@ -13,9 +13,9 @@ export default async function DeliveriesPage({
 }) {
   await verifySession();
   const { distributorId } = await searchParams;
-  const distributors = listDistributors();
-  const vehicles = listVehicles();
-  const deliveries = listDeliveries({
+  const distributors = await listDistributors();
+  const vehicles = await listVehicles();
+  const deliveries = await listDeliveries({
     distributorId: distributorId ? Number(distributorId) : undefined,
     limit: 200,
   });

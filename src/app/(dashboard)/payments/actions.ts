@@ -30,7 +30,7 @@ export async function createPaymentAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  createPayment(parsed.data);
+  await createPayment(parsed.data);
   revalidatePath("/payments");
   revalidatePath("/");
   revalidatePath("/distributors");
@@ -39,7 +39,7 @@ export async function createPaymentAction(
 
 export async function deletePaymentAction(id: number) {
   await verifySession();
-  deletePayment(id);
+  await deletePayment(id);
   revalidatePath("/payments");
   revalidatePath("/");
   revalidatePath("/distributors");

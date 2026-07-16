@@ -13,7 +13,7 @@ export default async function WeeklyReportPage({
   const { week } = await searchParams;
   const anchor = week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : todayIso();
   const { from, to } = weekRange(anchor);
-  const report = getReport(from, to);
+  const report = await getReport(from, to);
 
   const prevWeek = shiftWeek(anchor, -1);
   const nextWeek = shiftWeek(anchor, 1);

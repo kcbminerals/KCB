@@ -7,7 +7,7 @@ import { createDistributorAction } from "./actions";
 
 export default async function DistributorsPage() {
   await verifySession();
-  const distributors = listDistributorsSummary();
+  const distributors = await listDistributorsSummary();
 
   return (
     <div className="flex flex-col gap-6">

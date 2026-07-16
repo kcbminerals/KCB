@@ -29,8 +29,8 @@ function StatCard({
 export default async function DashboardPage() {
   await verifySession();
   const today = todayIso();
-  const stats = getDashboardStats(today);
-  const recentDeliveries = listDeliveries({ limit: 8 });
+  const stats = await getDashboardStats(today);
+  const recentDeliveries = await listDeliveries({ limit: 8 });
 
   return (
     <div className="flex flex-col gap-6">

@@ -2,7 +2,7 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { dbGet, dbRun } from "@/lib/db";
 import { createSession, deleteSession, getSession } from "@/lib/session";
 
 type UserRow = {
@@ -12,17 +12,15 @@ type UserRow = {
   name: string;
 };
 
-export function findUserByUsername(username: string): UserRow | undefined {
-  return db
-    .prepare("SELECT * FROM users WHERE username = ?")
-    .get(username) as UserRow | undefined;
+export async function findUserByUsername(username: string): Promise<UserRow | undefined> {
+  return dbGet<UserRow>("SELECT * FROM users WHERE username = ?", [username]);
 }
 
 export async function attemptLogin(
   username: string,
   password: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const user = findUserByUsername(username.trim());
+  const user = await findUserByUsername(username.trim());
   if (!user) {
     return { ok: false, error: "Invalid username or password." };
   }
@@ -52,9 +50,7 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as
-    | UserRow
-    | undefined;
+  const user = await dbGet<UserRow>("SELECT * FROM users WHERE id = ?", [userId]);
   if (!user) {
     return { ok: false, error: "User not found." };
   }
@@ -66,6 +62,6 @@ export async function changePassword(
     return { ok: false, error: "New password must be at least 6 characters." };
   }
   const hash = await bcrypt.hash(newPassword, 10);
-  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, userId);
+  await dbRun("UPDATE users SET password_hash = ? WHERE id = ?", [hash, userId]);
   return { ok: true };
 }

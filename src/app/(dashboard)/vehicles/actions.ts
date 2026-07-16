@@ -24,13 +24,13 @@ export async function createVehicleAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  createVehicle(parsed.data);
+  await createVehicle(parsed.data);
   revalidatePath("/vehicles");
   return undefined;
 }
 
 export async function setVehicleActiveAction(id: number, active: boolean) {
   await verifySession();
-  setVehicleActive(id, active);
+  await setVehicleActive(id, active);
   revalidatePath("/vehicles");
 }

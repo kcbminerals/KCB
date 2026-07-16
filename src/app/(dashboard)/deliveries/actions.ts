@@ -42,7 +42,7 @@ export async function createDeliveryAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  createDelivery(parsed.data);
+  await createDelivery(parsed.data);
   revalidatePath("/deliveries");
   revalidatePath("/");
   revalidatePath("/distributors");
@@ -59,7 +59,7 @@ export async function updateDeliveryAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  updateDelivery(id, parsed.data);
+  await updateDelivery(id, parsed.data);
   revalidatePath("/deliveries");
   revalidatePath("/");
   revalidatePath("/distributors");
@@ -68,7 +68,7 @@ export async function updateDeliveryAction(
 
 export async function deleteDeliveryAction(id: number) {
   await verifySession();
-  deleteDelivery(id);
+  await deleteDelivery(id);
   revalidatePath("/deliveries");
   revalidatePath("/");
   revalidatePath("/distributors");

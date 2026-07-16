@@ -33,7 +33,7 @@ export async function createDistributorAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  createDistributor(parsed.data);
+  await createDistributor(parsed.data);
   revalidatePath("/distributors");
   redirect("/distributors");
 }
@@ -53,7 +53,7 @@ export async function updateDistributorAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  updateDistributor(id, parsed.data);
+  await updateDistributor(id, parsed.data);
   revalidatePath("/distributors");
   revalidatePath(`/distributors/${id}`);
   redirect(`/distributors/${id}`);
@@ -64,7 +64,7 @@ export async function setDistributorActiveAction(
   active: boolean
 ) {
   await verifySession();
-  setDistributorActive(id, active);
+  await setDistributorActive(id, active);
   revalidatePath("/distributors");
   revalidatePath(`/distributors/${id}`);
 }

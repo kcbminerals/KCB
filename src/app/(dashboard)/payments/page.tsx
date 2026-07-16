@@ -8,8 +8,8 @@ import DeleteButton from "@/components/DeleteButton";
 
 export default async function PaymentsPage() {
   await verifySession();
-  const distributors = listDistributors();
-  const payments = listPayments({ limit: 200 });
+  const distributors = await listDistributors();
+  const payments = await listPayments({ limit: 200 });
 
   return (
     <div className="flex flex-col gap-6">

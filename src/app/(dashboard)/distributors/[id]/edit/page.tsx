@@ -11,7 +11,7 @@ export default async function EditDistributorPage({
 }) {
   await verifySession();
   const { id } = await params;
-  const distributor = getDistributor(Number(id));
+  const distributor = await getDistributor(Number(id));
   if (!distributor) notFound();
 
   const action = updateDistributorAction.bind(null, distributor.id);

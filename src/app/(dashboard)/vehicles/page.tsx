@@ -5,7 +5,7 @@ import { setVehicleActiveAction } from "./actions";
 
 export default async function VehiclesPage() {
   await verifySession();
-  const vehicles = listVehicles(true);
+  const vehicles = await listVehicles(true);
 
   return (
     <div className="flex flex-col gap-6">

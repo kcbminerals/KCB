@@ -1,25 +1,28 @@
 import "server-only";
-import Database from "better-sqlite3";
+import { createClient, type InValue } from "@libsql/client";
 import path from "node:path";
 import fs from "node:fs";
 import bcrypt from "bcryptjs";
 
-const dataDir = path.join(process.cwd(), "data");
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+const isRemote = Boolean(process.env.TURSO_DATABASE_URL);
+
+if (!isRemote) {
+  const dataDir = path.join(process.cwd(), "data");
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
 }
 
-const dbPath = path.join(dataDir, "app.db");
-
 declare global {
-  var __kcbDb: Database.Database | undefined;
+  var __kcbDb: ReturnType<typeof createClient> | undefined;
+  var __kcbMigrated: Promise<void> | undefined;
 }
 
 function createConnection() {
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  return db;
+  return createClient({
+    url: process.env.TURSO_DATABASE_URL ?? "file:./data/app.db",
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
 }
 
 export const db = globalThis.__kcbDb ?? createConnection();
@@ -27,8 +30,8 @@ if (process.env.NODE_ENV !== "production") {
   globalThis.__kcbDb = db;
 }
 
-function migrate() {
-  db.exec(`
+async function migrate() {
+  await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
@@ -87,17 +90,47 @@ function migrate() {
 
   const defaultPassword = "kcb1234";
   const hash = bcrypt.hashSync(defaultPassword, 10);
-  const seeded = db
-    .prepare(
-      `INSERT INTO users (username, password_hash, name)
-       SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM users)`
-    )
-    .run("admin", hash, "Admin");
-  if (seeded.changes > 0) {
+  const seeded = await db.execute({
+    sql: `INSERT INTO users (username, password_hash, name)
+          SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM users)`,
+    args: ["admin", hash, "Admin"],
+  });
+  if (seeded.rowsAffected > 0) {
     console.log(
       `[kcb] Created default login -> username: admin, password: ${defaultPassword} (please change it after first login)`
     );
   }
 }
 
-migrate();
+export function ensureMigrated(): Promise<void> {
+  if (!globalThis.__kcbMigrated) {
+    globalThis.__kcbMigrated = migrate();
+  }
+  return globalThis.__kcbMigrated;
+}
+
+/** Run a SELECT and return all matching rows, plainly typed. */
+export async function dbAll<T>(sql: string, args: InValue[] = []): Promise<T[]> {
+  await ensureMigrated();
+  const result = await db.execute({ sql, args });
+  return result.rows.map((row) => ({ ...row }) as unknown as T);
+}
+
+/** Run a SELECT and return the first matching row, if any. */
+export async function dbGet<T>(sql: string, args: InValue[] = []): Promise<T | undefined> {
+  const rows = await dbAll<T>(sql, args);
+  return rows[0];
+}
+
+/** Run an INSERT/UPDATE/DELETE and return affected-row info. */
+export async function dbRun(
+  sql: string,
+  args: InValue[] = []
+): Promise<{ lastInsertRowid: number; changes: number }> {
+  await ensureMigrated();
+  const result = await db.execute({ sql, args });
+  return {
+    lastInsertRowid: Number(result.lastInsertRowid ?? 0),
+    changes: result.rowsAffected,
+  };
+}

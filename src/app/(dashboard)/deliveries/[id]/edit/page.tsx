@@ -11,11 +11,11 @@ export default async function EditDeliveryPage({
 }) {
   await verifySession();
   const { id } = await params;
-  const delivery = getDelivery(Number(id));
+  const delivery = await getDelivery(Number(id));
   if (!delivery) notFound();
 
-  const distributors = listDistributors(true);
-  const vehicles = listVehicles(true);
+  const distributors = await listDistributors(true);
+  const vehicles = await listVehicles(true);
   const action = updateDeliveryAction.bind(null, delivery.id);
 
   return (

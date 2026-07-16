@@ -6,7 +6,7 @@ import PrintButton from "@/components/PrintButton";
 
 export default async function ReportsPage() {
   await verifySession();
-  const distributors = listDistributorsSummary(true);
+  const distributors = await listDistributorsSummary(true);
 
   return (
     <div className="flex flex-col gap-6">
