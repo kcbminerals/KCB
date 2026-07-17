@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { verifySession } from "@/lib/auth";
 import { listPayments, listDistributors } from "@/lib/queries";
-import { formatMoney, formatDate } from "@/lib/format";
+import { formatMoney, formatDate, formatTime } from "@/lib/format";
 import PaymentForm from "./PaymentForm";
 import { deletePaymentAction } from "./actions";
 import DeleteButton from "@/components/DeleteButton";
@@ -61,7 +61,12 @@ export default async function PaymentsPage() {
               )}
               {payments.map((p) => (
                 <tr key={p.id} className="border-b border-slate-50 last:border-0">
-                  <td className="px-4 py-2 whitespace-nowrap">{formatDate(p.date)}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    {formatDate(p.date)}
+                    <div className="text-xs text-slate-400">
+                      Recorded {formatTime(p.created_at)}
+                    </div>
+                  </td>
                   <td className="px-4 py-2">{p.distributor_name}</td>
                   <td className="px-4 py-2">{p.method ?? "—"}</td>
                   <td className="px-4 py-2">{p.notes ?? "—"}</td>

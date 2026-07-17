@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { listDistributorsSummary, listVehicles } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
 import DistributorForm from "./DistributorForm";
 import { createDistributorAction } from "./actions";
 
 export default async function DistributorsPage() {
-  await verifySession();
+  await requireAdmin();
   const [distributors, vehicles] = await Promise.all([
     listDistributorsSummary(),
     listVehicles(),
@@ -14,11 +14,19 @@ export default async function DistributorsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Distributors</h1>
-        <p className="text-sm text-slate-500">
-          Manage distributors and see their jar &amp; payment balances.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Distributors</h1>
+          <p className="text-sm text-slate-500">
+            Manage distributors and see their jar &amp; payment balances.
+          </p>
+        </div>
+        <Link
+          href="/vehicles"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+        >
+          Manage vehicles
+        </Link>
       </div>
 
       <details className="group rounded-xl border border-slate-200 bg-white shadow-sm">

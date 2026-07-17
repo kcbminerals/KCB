@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { DistributorFormState } from "./actions";
 import type { Distributor, Vehicle } from "@/lib/types";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
+import QuickAddVehicle from "./QuickAddVehicle";
 
 export default function DistributorForm({
   action,
@@ -20,6 +21,7 @@ export default function DistributorForm({
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const [vehicleId, setVehicleId] = useState<number | "">(distributor?.vehicle_id ?? "");
 
   return (
     <form action={formAction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -97,7 +99,8 @@ export default function DistributorForm({
         <select
           id="vehicleId"
           name="vehicleId"
-          defaultValue={distributor?.vehicle_id ?? ""}
+          value={vehicleId}
+          onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")}
           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         >
           <option value="">— none —</option>
@@ -108,6 +111,7 @@ export default function DistributorForm({
             </option>
           ))}
         </select>
+        <QuickAddVehicle onCreated={(id) => setVehicleId(id)} />
       </div>
       {state?.error && (
         <p className="sm:col-span-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">

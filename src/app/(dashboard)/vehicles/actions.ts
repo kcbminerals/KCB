@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { createVehicle, setVehicleActive } from "@/lib/queries";
 
 const vehicleSchema = z.object({
@@ -10,13 +10,13 @@ const vehicleSchema = z.object({
   plateNumber: z.string().trim().optional(),
 });
 
-export type VehicleFormState = { error?: string } | undefined;
+export type VehicleFormState = { error?: string; createdId?: number } | undefined;
 
 export async function createVehicleAction(
   _prevState: VehicleFormState,
   formData: FormData
 ): Promise<VehicleFormState> {
-  await verifySession();
+  await requireAdmin();
   const parsed = vehicleSchema.safeParse({
     name: formData.get("name"),
     plateNumber: formData.get("plateNumber"),
@@ -24,13 +24,15 @@ export async function createVehicleAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  await createVehicle(parsed.data);
+  const id = await createVehicle(parsed.data);
   revalidatePath("/vehicles");
-  return undefined;
+  revalidatePath("/distributors");
+  return { createdId: id };
 }
 
 export async function setVehicleActiveAction(id: number, active: boolean) {
-  await verifySession();
+  await requireAdmin();
   await setVehicleActive(id, active);
   revalidatePath("/vehicles");
+  revalidatePath("/distributors");
 }

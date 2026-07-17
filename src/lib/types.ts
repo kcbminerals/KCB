@@ -1,6 +1,18 @@
 export const DISTRIBUTOR_CATEGORIES = ["KCB1", "KCB2", "Enrich"] as const;
 export type DistributorCategory = (typeof DISTRIBUTOR_CATEGORIES)[number];
 
+export const USER_ROLES = ["admin", "staff"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export type User = {
+  id: number;
+  username: string;
+  name: string;
+  role: UserRole;
+  active: number;
+  created_at: string;
+};
+
 export type Distributor = {
   id: number;
   name: string;

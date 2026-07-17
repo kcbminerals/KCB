@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getReport, listDistributors } from "@/lib/queries";
 import { todayIso, weekRange, shiftWeek, formatDate } from "@/lib/format";
 import ReportView from "@/components/ReportView";
@@ -12,7 +12,7 @@ export default async function WeeklyReportPage({
 }: {
   searchParams: Promise<{ week?: string; distributorId?: string; category?: string }>;
 }) {
-  await verifySession();
+  await requireAdmin();
   const { week, distributorId, category } = await searchParams;
   const anchor = week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : todayIso();
   const { from, to } = weekRange(anchor);

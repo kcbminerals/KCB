@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { verifySession } from "@/lib/auth";
 import { listDeliveries, listDistributors, listVehicles } from "@/lib/queries";
-import { formatMoney, formatDate } from "@/lib/format";
+import { formatMoney, formatDate, formatTime } from "@/lib/format";
 import DeliveryForm from "./DeliveryForm";
 import { createDeliveryAction, deleteDeliveryAction } from "./actions";
 import DeleteButton from "@/components/DeleteButton";
@@ -100,7 +100,12 @@ export default async function DeliveriesPage({
               )}
               {deliveries.map((d) => (
                 <tr key={d.id} className="border-b border-slate-50 last:border-0">
-                  <td className="px-4 py-2 whitespace-nowrap">{formatDate(d.date)}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    {formatDate(d.date)}
+                    <div className="text-xs text-slate-400">
+                      Recorded {formatTime(d.created_at)}
+                    </div>
+                  </td>
                   <td className="px-4 py-2">{d.distributor_name}</td>
                   <td className="px-4 py-2">{d.vehicle_name ?? "—"}</td>
                   <td className="px-4 py-2 text-right">{d.jars_loaded}</td>

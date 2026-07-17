@@ -32,6 +32,17 @@ export function formatDateTime(iso: string): string {
   return `${datePart} ${timePart}`;
 }
 
+/** Formats just the time portion of an ISO timestamp (e.g. a created_at value), e.g. "2:15 PM". */
+export function formatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export function shiftDay(iso: string, days: number): string {
   const date = new Date(`${iso}T00:00:00`);
   date.setDate(date.getDate() + days);

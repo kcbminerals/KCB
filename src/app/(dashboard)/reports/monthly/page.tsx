@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getReport, listDistributors } from "@/lib/queries";
 import { currentYearMonth, monthRange, shiftMonth, formatDate } from "@/lib/format";
 import ReportView from "@/components/ReportView";
@@ -17,7 +17,7 @@ export default async function MonthlyReportPage({
 }: {
   searchParams: Promise<{ month?: string; distributorId?: string; category?: string }>;
 }) {
-  await verifySession();
+  await requireAdmin();
   const { month, distributorId, category } = await searchParams;
   const anchor = month && /^\d{4}-\d{2}$/.test(month) ? month : currentYearMonth();
   const { from, to } = monthRange(anchor);

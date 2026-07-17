@@ -4,12 +4,15 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { getWorksheet } from "@/lib/sheets";
 import { createSession, deleteSession, getSession } from "@/lib/session";
+import type { UserRole } from "@/lib/types";
 
 type UserRow = {
   id: number;
   username: string;
   password_hash: string;
   name: string;
+  role: UserRole;
+  active: number;
 };
 
 async function findUserRow(predicate: (row: {
@@ -21,11 +24,18 @@ async function findUserRow(predicate: (row: {
 }
 
 function toUser(row: { get(key: string): unknown }): UserRow {
+  const role = row.get("role");
+  const active = row.get("active");
   return {
     id: Number(row.get("id")),
     username: String(row.get("username")),
     password_hash: String(row.get("password_hash")),
     name: String(row.get("name")),
+    // Rows created before the role/active columns existed default to a
+    // full admin account that's active, so nobody already using the app
+    // gets silently locked out or demoted.
+    role: role === "staff" ? "staff" : "admin",
+    active: active === "" || active === undefined || active === null ? 1 : Number(active),
   };
 }
 
@@ -37,17 +47,25 @@ export async function findUserByUsername(username: string): Promise<UserRow | un
 export async function attemptLogin(
   username: string,
   password: string
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; role: UserRole } | { ok: false; error: string }> {
   const user = await findUserByUsername(username.trim());
   if (!user) {
     return { ok: false, error: "Invalid username or password." };
+  }
+  if (!user.active) {
+    return { ok: false, error: "This account has been deactivated." };
   }
   const valid = await bcrypt.compare(password, user.password_hash);
   if (!valid) {
     return { ok: false, error: "Invalid username or password." };
   }
-  await createSession({ userId: user.id, username: user.username, name: user.name });
-  return { ok: true };
+  await createSession({
+    userId: user.id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  });
+  return { ok: true, role: user.role };
 }
 
 export async function logout(): Promise<void> {
@@ -62,6 +80,15 @@ export const verifySession = cache(async () => {
   }
   return session;
 });
+
+/** Verifies the session exists AND belongs to an admin; redirects staff away otherwise. */
+export async function requireAdmin() {
+  const session = await verifySession();
+  if (session.role !== "admin") {
+    redirect("/deliveries");
+  }
+  return session;
+}
 
 export async function changePassword(
   userId: number,

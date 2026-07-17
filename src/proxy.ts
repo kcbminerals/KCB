@@ -4,6 +4,8 @@ import { decrypt } from "@/lib/session";
 
 const COOKIE_NAME = "kcb_session";
 const PUBLIC_PATHS = ["/login"];
+const STAFF_ALLOWED_PATHS = ["/deliveries", "/payments", "/account"];
+const STAFF_HOME = "/deliveries";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -19,12 +21,27 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPublic && session?.userId) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const home = session.role === "admin" ? "/" : STAFF_HOME;
+    return NextResponse.redirect(new URL(home, request.url));
+  }
+
+  // Staff can fully manage deliveries/payments (add, edit, delete) and their
+  // own account, but everything else — dashboard, reports, distributors,
+  // vehicles, users — is admin-only.
+  if (session?.userId && session.role !== "admin") {
+    const allowed = STAFF_ALLOWED_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`)
+    );
+    if (!allowed) {
+      return NextResponse.redirect(new URL(STAFF_HOME, request.url));
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|logo.png|icon.png|apple-icon.png).*)",
+  ],
 };

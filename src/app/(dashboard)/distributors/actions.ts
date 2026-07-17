@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import {
   createDistributor,
   updateDistributor,
@@ -38,7 +38,7 @@ export async function createDistributorAction(
   _prevState: DistributorFormState,
   formData: FormData
 ): Promise<DistributorFormState> {
-  await verifySession();
+  await requireAdmin();
   const parsed = parseDistributor(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -53,7 +53,7 @@ export async function updateDistributorAction(
   _prevState: DistributorFormState,
   formData: FormData
 ): Promise<DistributorFormState> {
-  await verifySession();
+  await requireAdmin();
   const parsed = parseDistributor(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -68,7 +68,7 @@ export async function setDistributorActiveAction(
   id: number,
   active: boolean
 ) {
-  await verifySession();
+  await requireAdmin();
   await setDistributorActive(id, active);
   revalidatePath("/distributors");
   revalidatePath(`/distributors/${id}`);

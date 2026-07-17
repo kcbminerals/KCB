@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getDistributor, listVehicles } from "@/lib/queries";
 import DistributorForm from "../../DistributorForm";
 import { updateDistributorAction } from "../../actions";
@@ -9,7 +9,7 @@ export default async function EditDistributorPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await verifySession();
+  await requireAdmin();
   const { id } = await params;
   const [distributor, vehicles] = await Promise.all([
     getDistributor(Number(id)),

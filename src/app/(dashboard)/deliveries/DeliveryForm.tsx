@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import type { DeliveryFormState } from "./actions";
 import type { Distributor, Vehicle, Delivery } from "@/lib/types";
 import { todayIso } from "@/lib/format";
+import DistributorCombobox from "@/components/DistributorCombobox";
 
 export default function DeliveryForm({
   action,
@@ -23,16 +24,21 @@ export default function DeliveryForm({
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
 
-  const priceByDistributor = useMemo(
-    () => new Map(distributors.map((d) => [d.id, d.price_per_jar])),
+  const distributorById = useMemo(
+    () => new Map(distributors.map((d) => [d.id, d])),
     [distributors]
   );
 
-  const [distributorId, setDistributorId] = useState(
-    delivery?.distributor_id ?? distributors[0]?.id ?? 0
-  );
+  const initialDistributorId = delivery?.distributor_id ?? distributors[0]?.id;
   const [pricePerJar, setPricePerJar] = useState(
-    delivery?.price_per_jar ?? priceByDistributor.get(distributorId) ?? 0
+    delivery?.price_per_jar ??
+      (initialDistributorId ? distributorById.get(initialDistributorId)?.price_per_jar : 0) ??
+      0
+  );
+  const [vehicleId, setVehicleId] = useState<number | "">(
+    delivery?.vehicle_id ??
+      (initialDistributorId ? distributorById.get(initialDistributorId)?.vehicle_id : null) ??
+      ""
   );
   const [jarsLoaded, setJarsLoaded] = useState(delivery?.jars_loaded ?? 0);
   const [paidAmount, setPaidAmount] = useState(delivery?.paid_amount ?? 0);
@@ -74,25 +80,16 @@ export default function DeliveryForm({
         >
           Distributor
         </label>
-        <select
-          id="distributorId"
+        <DistributorCombobox
           name="distributorId"
-          required
-          value={distributorId}
-          onChange={(e) => {
-            const id = Number(e.target.value);
-            setDistributorId(id);
-            setPricePerJar(priceByDistributor.get(id) ?? 0);
+          distributors={distributors}
+          defaultId={initialDistributorId}
+          onSelect={(id) => {
+            const dist = distributorById.get(id);
+            setPricePerJar(dist?.price_per_jar ?? 0);
+            setVehicleId(dist?.vehicle_id ?? "");
           }}
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-        >
-          {distributors.length === 0 && <option value="">No distributors</option>}
-          {distributors.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       <div className="flex flex-col gap-1">
@@ -102,7 +99,8 @@ export default function DeliveryForm({
         <select
           id="vehicleId"
           name="vehicleId"
-          defaultValue={delivery?.vehicle_id ?? ""}
+          value={vehicleId}
+          onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")}
           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         >
           <option value="">— none —</option>

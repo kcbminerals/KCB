@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { createPaymentAction } from "./actions";
 import type { Distributor } from "@/lib/types";
 import { todayIso } from "@/lib/format";
+import DistributorCombobox from "@/components/DistributorCombobox";
 
 export default function PaymentForm({
   distributors,
@@ -37,18 +38,11 @@ export default function PaymentForm({
         >
           Distributor
         </label>
-        <select
-          id="distributorId"
+        <DistributorCombobox
           name="distributorId"
-          required
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-        >
-          {distributors.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
+          distributors={distributors}
+          defaultId={distributors[0]?.id}
+        />
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="amount" className="text-sm font-medium text-slate-700">

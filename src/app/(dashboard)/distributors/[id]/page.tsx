@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import {
   getDistributorSummary,
   listDeliveries,
   listPayments,
 } from "@/lib/queries";
-import { formatMoney, formatDate, formatDateTime } from "@/lib/format";
+import { formatMoney, formatDate, formatDateTime, formatTime } from "@/lib/format";
 import { setDistributorActiveAction } from "../actions";
 
 export default async function DistributorDetailPage({
@@ -14,7 +14,7 @@ export default async function DistributorDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await verifySession();
+  await requireAdmin();
   const { id } = await params;
   const distributorId = Number(id);
   const distributor = await getDistributorSummary(distributorId);
@@ -25,6 +25,7 @@ export default async function DistributorDetailPage({
 
   type Entry = {
     date: string;
+    created_at: string;
     kind: "delivery" | "payment";
     description: string;
     billed: number;
@@ -33,6 +34,7 @@ export default async function DistributorDetailPage({
   const entries: Entry[] = [
     ...deliveries.map((d) => ({
       date: d.date,
+      created_at: d.created_at,
       kind: "delivery" as const,
       description: `${d.jars_loaded} jars loaded${
         d.jars_returned ? `, ${d.jars_returned} returned` : ""
@@ -42,6 +44,7 @@ export default async function DistributorDetailPage({
     })),
     ...payments.map((p) => ({
       date: p.date,
+      created_at: p.created_at,
       kind: "payment" as const,
       description: `Payment received${p.method ? ` via ${p.method}` : ""}${
         p.notes ? ` — ${p.notes}` : ""
@@ -49,7 +52,10 @@ export default async function DistributorDetailPage({
       billed: 0,
       paid: p.amount,
     })),
-  ].sort((a, b) => (a.date < b.date ? 1 : -1));
+  ].sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.created_at < b.created_at ? 1 : -1;
+  });
 
   const toggleActive = setDistributorActiveAction.bind(
     null,
@@ -151,7 +157,10 @@ export default async function DistributorDetailPage({
               )}
               {entries.map((e, i) => (
                 <tr key={i} className="border-b border-slate-50 last:border-0">
-                  <td className="px-4 py-2 whitespace-nowrap">{formatDate(e.date)}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    {formatDate(e.date)}
+                    <div className="text-xs text-slate-400">{formatTime(e.created_at)}</div>
+                  </td>
                   <td className="px-4 py-2">
                     <span
                       className={`mr-2 rounded px-1.5 py-0.5 text-xs font-medium ${

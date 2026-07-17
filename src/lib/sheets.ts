@@ -3,7 +3,15 @@ import { JWT } from "google-auth-library";
 import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from "google-spreadsheet";
 import bcrypt from "bcryptjs";
 
-const USERS_HEADERS = ["id", "username", "password_hash", "name", "created_at"];
+const USERS_HEADERS = [
+  "id",
+  "username",
+  "password_hash",
+  "name",
+  "role",
+  "active",
+  "created_at",
+];
 const DISTRIBUTORS_HEADERS = [
   "id",
   "name",
@@ -95,6 +103,14 @@ async function ensureSheet(
   await sheet.loadHeaderRow().catch(() => undefined);
   if (!sheet.headerValues || sheet.headerValues.length === 0) {
     await sheet.setHeaderRow([...headers]);
+    return sheet;
+  }
+  // A sheet created by an older version of the app may be missing columns
+  // that got added later (e.g. "role"/"active" on Users). Append any
+  // missing headers without disturbing existing columns or data.
+  const missing = headers.filter((h) => !sheet!.headerValues.includes(h));
+  if (missing.length > 0) {
+    await sheet.setHeaderRow([...sheet.headerValues, ...missing]);
   }
   return sheet;
 }
@@ -117,6 +133,8 @@ async function migrate(): Promise<void> {
       username: "admin",
       password_hash: hash,
       name: "Admin",
+      role: "admin",
+      active: 1,
       created_at: new Date().toISOString(),
     });
     console.log(

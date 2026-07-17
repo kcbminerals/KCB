@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getDashboardStats, listDeliveries } from "@/lib/queries";
-import { formatMoney, formatDate, todayIso } from "@/lib/format";
+import { formatMoney, formatDate, formatTime, todayIso } from "@/lib/format";
 
 function StatCard({
   label,
@@ -27,7 +27,7 @@ function StatCard({
 }
 
 export default async function DashboardPage() {
-  await verifySession();
+  await requireAdmin();
   const today = todayIso();
   const stats = await getDashboardStats(today);
   const recentDeliveries = await listDeliveries({ limit: 8 });
@@ -114,7 +114,10 @@ export default async function DashboardPage() {
               )}
               {recentDeliveries.map((d) => (
                 <tr key={d.id} className="border-b border-slate-50 last:border-0">
-                  <td className="px-4 py-2">{formatDate(d.date)}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    {formatDate(d.date)}
+                    <div className="text-xs text-slate-400">{formatTime(d.created_at)}</div>
+                  </td>
                   <td className="px-4 py-2">{d.distributor_name}</td>
                   <td className="px-4 py-2">{d.vehicle_name ?? "—"}</td>
                   <td className="px-4 py-2 text-right">{d.jars_loaded}</td>

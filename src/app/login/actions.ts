@@ -11,7 +11,7 @@ export async function loginAction(
 ): Promise<LoginState> {
   const username = String(formData.get("username") ?? "");
   const password = String(formData.get("password") ?? "");
-  const redirectTo = String(formData.get("redirectTo") ?? "/");
+  const requestedRedirect = String(formData.get("redirectTo") ?? "/");
 
   if (!username || !password) {
     return { error: "Please enter a username and password." };
@@ -22,5 +22,10 @@ export async function loginAction(
     return { error: result.error };
   }
 
-  redirect(redirectTo.startsWith("/") ? redirectTo : "/");
+  // Staff land on their entry page by default rather than the admin
+  // dashboard; an explicit "next" (e.g. a bookmarked link) is still honored
+  // and proxy will bounce staff onward if it's a page they can't reach.
+  const fallbackHome = result.role === "admin" ? "/" : "/deliveries";
+  const redirectTo = requestedRedirect.startsWith("/") ? requestedRedirect : fallbackHome;
+  redirect(redirectTo === "/" ? fallbackHome : redirectTo);
 }

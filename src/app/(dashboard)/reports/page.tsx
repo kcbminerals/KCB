@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { listDistributorsSummary } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
@@ -7,7 +7,7 @@ import PrintButton from "@/components/PrintButton";
 import ExportCsvButton from "@/components/ExportCsvButton";
 
 export default async function ReportsPage() {
-  await verifySession();
+  await requireAdmin();
   const distributors = await listDistributorsSummary(true);
 
   const byCategory = DISTRIBUTOR_CATEGORIES.map((category) => {

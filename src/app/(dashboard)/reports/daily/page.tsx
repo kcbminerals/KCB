@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { verifySession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getReport, listDistributors } from "@/lib/queries";
 import { todayIso, shiftDay, formatDate } from "@/lib/format";
 import ReportView from "@/components/ReportView";
@@ -12,7 +12,7 @@ export default async function DailyReportPage({
 }: {
   searchParams: Promise<{ day?: string; distributorId?: string; category?: string }>;
 }) {
-  await verifySession();
+  await requireAdmin();
   const { day, distributorId, category } = await searchParams;
   const anchor = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : todayIso();
   const validCategory = (DISTRIBUTOR_CATEGORIES as readonly string[]).includes(category ?? "")

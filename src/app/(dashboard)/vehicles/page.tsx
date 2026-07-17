@@ -1,19 +1,29 @@
-import { verifySession } from "@/lib/auth";
+import Link from "next/link";
+import { requireAdmin } from "@/lib/auth";
 import { listVehicles } from "@/lib/queries";
 import VehicleForm from "./VehicleForm";
 import { setVehicleActiveAction } from "./actions";
 
 export default async function VehiclesPage() {
-  await verifySession();
+  await requireAdmin();
   const vehicles = await listVehicles(true);
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Vehicles</h1>
-        <p className="text-sm text-slate-500">
-          Vehicles used to deliver jars to distributors.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Vehicles</h1>
+          <p className="text-sm text-slate-500">
+            Vehicles used to deliver jars to distributors. You can also add a
+            vehicle inline while adding or editing a distributor.
+          </p>
+        </div>
+        <Link
+          href="/distributors"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+        >
+          Back to distributors
+        </Link>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KCB Water Factory",
-  description: "Jar delivery, payments and reports for KCB Water Factory",
+  title: "KCB Minerals",
+  description: "Jar delivery, payments and reports for KCB Minerals",
 };
 
 export default function RootLayout({
