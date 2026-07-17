@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import type { DeliveryFormState } from "./actions";
 import type { Distributor, Vehicle, Delivery } from "@/lib/types";
-import { todayIso } from "@/lib/format";
+import { todayIso, nowTimeValue, timeInputValue } from "@/lib/format";
 import DistributorCombobox from "@/components/DistributorCombobox";
 
 export default function DeliveryForm({
@@ -43,6 +43,12 @@ export default function DeliveryForm({
   const [jarsLoaded, setJarsLoaded] = useState(delivery?.jars_loaded ?? 0);
   const [paidAmount, setPaidAmount] = useState(delivery?.paid_amount ?? 0);
 
+  // The pre-filled time is the person's wall clock, which the server can't
+  // know at render time — hence suppressHydrationWarning on the input.
+  const [time, setTime] = useState(() =>
+    delivery ? timeInputValue(delivery.created_at) : nowTimeValue()
+  );
+
   const billAmount = jarsLoaded * pricePerJar;
 
   // After a successful new-delivery submission, clear the per-entry fields
@@ -54,23 +60,41 @@ export default function DeliveryForm({
       lastSavedAt.current = state.savedAt;
       setJarsLoaded(0);
       setPaidAmount(0);
+      setTime(nowTimeValue());
     }
   }, [delivery, state]);
 
   return (
     <form action={formAction} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="date" className="text-sm font-medium text-slate-700">
-          Date
-        </label>
-        <input
-          id="date"
-          name="date"
-          type="date"
-          required
-          defaultValue={delivery?.date ?? todayIso()}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-        />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="date" className="text-sm font-medium text-slate-700">
+            Date
+          </label>
+          <input
+            id="date"
+            name="date"
+            type="date"
+            required
+            defaultValue={delivery?.date ?? todayIso()}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="time" className="text-sm font-medium text-slate-700">
+            Time
+          </label>
+          <input
+            id="time"
+            name="time"
+            type="time"
+            required
+            suppressHydrationWarning
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -128,23 +152,9 @@ export default function DeliveryForm({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="jarsReturned"
-          className="text-sm font-medium text-slate-700"
-        >
-          Empty jars returned
-        </label>
-        <input
-          id="jarsReturned"
-          name="jarsReturned"
-          type="number"
-          min="0"
-          required
-          defaultValue={delivery?.jars_returned ?? 0}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-        />
-      </div>
+      {/* Returns aren't tracked at entry anymore, but keep any value an
+          older record already has when it's re-saved from the edit page. */}
+      <input type="hidden" name="jarsReturned" value={delivery?.jars_returned ?? 0} />
 
       <div className="flex flex-col gap-1">
         <label

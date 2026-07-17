@@ -32,6 +32,19 @@ export function formatDateTime(iso: string): string {
   return `${datePart} ${timePart}`;
 }
 
+/** Current local time as an HH:MM string suitable for a <input type="time"> value. */
+export function nowTimeValue(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** HH:MM extracted from a stored timestamp, for pre-filling a <input type="time">. */
+export function timeInputValue(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 /** Formats just the time portion of an ISO timestamp (e.g. a created_at value), e.g. "2:15 PM". */
 export function formatTime(iso: string): string {
   const date = new Date(iso);

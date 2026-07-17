@@ -8,6 +8,10 @@ import { createDelivery, updateDelivery, deleteDelivery } from "@/lib/queries";
 
 const deliverySchema = z.object({
   date: z.string().min(1, "Date is required"),
+  time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Enter a valid time")
+    .optional(),
   distributorId: z.coerce.number().int().positive("Choose a distributor"),
   vehicleId: z.coerce.number().int().positive().optional(),
   jarsLoaded: z.coerce.number().int().min(0, "Must be 0 or more"),
@@ -21,16 +25,25 @@ export type DeliveryFormState = { error?: string; savedAt?: number } | undefined
 
 function parseDelivery(formData: FormData) {
   const vehicleRaw = formData.get("vehicleId");
+  const timeRaw = formData.get("time");
   return deliverySchema.safeParse({
     date: formData.get("date"),
+    time: timeRaw ? timeRaw : undefined,
     distributorId: formData.get("distributorId"),
     vehicleId: vehicleRaw ? vehicleRaw : undefined,
     jarsLoaded: formData.get("jarsLoaded"),
-    jarsReturned: formData.get("jarsReturned"),
+    jarsReturned: formData.get("jarsReturned") ?? 0,
     pricePerJar: formData.get("pricePerJar"),
     paidAmount: formData.get("paidAmount"),
     notes: formData.get("notes"),
   });
+}
+
+/** Combines the entry's date with the user-chosen wall-clock time into the
+ *  stored timestamp. Kept timezone-naive on purpose so it always displays
+ *  back exactly as the person entered it. */
+function entryTimestamp(date: string, time?: string): string | null {
+  return time ? `${date}T${time}` : null;
 }
 
 export async function createDeliveryAction(
@@ -42,7 +55,10 @@ export async function createDeliveryAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  await createDelivery(parsed.data);
+  await createDelivery({
+    ...parsed.data,
+    createdAt: entryTimestamp(parsed.data.date, parsed.data.time),
+  });
   revalidatePath("/deliveries");
   revalidatePath("/");
   revalidatePath("/distributors");
@@ -59,7 +75,10 @@ export async function updateDeliveryAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  await updateDelivery(id, parsed.data);
+  await updateDelivery(id, {
+    ...parsed.data,
+    createdAt: entryTimestamp(parsed.data.date, parsed.data.time),
+  });
   revalidatePath("/deliveries");
   revalidatePath("/");
   revalidatePath("/distributors");

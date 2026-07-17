@@ -4,7 +4,7 @@ import { decrypt } from "@/lib/session";
 
 const COOKIE_NAME = "kcb_session";
 const PUBLIC_PATHS = ["/login"];
-const STAFF_ALLOWED_PATHS = ["/deliveries", "/payments", "/account"];
+const STAFF_ALLOWED_PATHS = ["/deliveries", "/payments", "/account", "/distributors/new"];
 const STAFF_HOME = "/deliveries";
 
 export async function proxy(request: NextRequest) {

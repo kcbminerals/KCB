@@ -32,11 +32,10 @@ export default async function DeliveriesPage({
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         {distributors.length === 0 ? (
           <p className="text-sm text-slate-500">
-            Add a distributor first from the{" "}
-            <Link href="/distributors" className="text-sky-600 hover:underline">
-              Distributors
+            <Link href="/distributors/new" className="text-sky-600 hover:underline">
+              Add a distributor
             </Link>{" "}
-            page.
+            first, then record deliveries against them.
           </p>
         ) : (
           <DeliveryForm
@@ -83,7 +82,6 @@ export default async function DeliveriesPage({
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Vehicle</th>
                 <th className="px-4 py-2 font-medium text-right">Loaded</th>
-                <th className="px-4 py-2 font-medium text-right">Returned</th>
                 <th className="px-4 py-2 font-medium text-right">Bill</th>
                 <th className="px-4 py-2 font-medium text-right">Paid</th>
                 <th className="px-4 py-2 font-medium text-right">Due</th>
@@ -93,7 +91,7 @@ export default async function DeliveriesPage({
             <tbody>
               {deliveries.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
                     No deliveries recorded yet.
                   </td>
                 </tr>
@@ -109,7 +107,6 @@ export default async function DeliveriesPage({
                   <td className="px-4 py-2">{d.distributor_name}</td>
                   <td className="px-4 py-2">{d.vehicle_name ?? "—"}</td>
                   <td className="px-4 py-2 text-right">{d.jars_loaded}</td>
-                  <td className="px-4 py-2 text-right">{d.jars_returned}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(d.bill_amount)}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(d.paid_amount)}</td>
                   <td className="px-4 py-2 text-right">

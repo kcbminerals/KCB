@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, verifySession } from "@/lib/auth";
 import {
   createDistributor,
   updateDistributor,
@@ -38,14 +38,18 @@ export async function createDistributorAction(
   _prevState: DistributorFormState,
   formData: FormData
 ): Promise<DistributorFormState> {
-  await requireAdmin();
+  // Staff can add distributors too (they meet new customers on delivery
+  // rounds); only editing/deactivating stays admin-only.
+  const session = await verifySession();
   const parsed = parseDistributor(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
   await createDistributor(parsed.data);
   revalidatePath("/distributors");
-  redirect("/distributors");
+  revalidatePath("/deliveries");
+  revalidatePath("/payments");
+  redirect(session.role === "admin" ? "/distributors" : "/deliveries");
 }
 
 export async function updateDistributorAction(

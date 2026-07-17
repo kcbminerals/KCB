@@ -2,11 +2,11 @@
 
 A small web app for running KCB Minerals' water jar delivery business:
 
-- Record jars loaded to a vehicle for a distributor, empty jars returned, and the payment received in one entry — each entry is timestamped automatically.
+- Record jars loaded to a vehicle for a distributor and the payment received in one entry — with an editable date and time, so older entries can be backfilled.
 - Record standalone payments against a distributor's outstanding dues.
 - Track each distributor's running jar balance and outstanding due (ledger view), including which KCB1/KCB2/Enrich category and vehicle they belong to.
 - Daily, weekly and monthly reports, searchable/filterable by distributor and by category, printable to PDF, exportable to CSV.
-- Two account roles: **Admin** (full access, including distributors/vehicles/reports/user management) and **Staff** (can record and manage deliveries & payments only — no access to reports or business totals).
+- Two account roles: **Admin** (full access, including distributors/vehicles/reports/user management) and **Staff** (can record and manage deliveries & payments and add new distributors — no access to reports or business totals).
 - Simple username/password login, with an in-app change-password page.
 
 All data is stored directly in a **Google Sheet in your own Google Drive** — you can open it anytime to view, filter, or export your raw data, in addition to using the app.
@@ -58,7 +58,7 @@ Sign in and change this password right away from the **Account** page (top right
 ### Roles
 
 - **Admin** — everything: dashboard, deliveries, payments, distributors, vehicles, reports, and the Users page to add/deactivate logins.
-- **Staff** — can add, edit and delete deliveries and payments. Cannot see the dashboard, reports, distributor ledgers, vehicles, or the Users page.
+- **Staff** — can add, edit and delete deliveries and payments, and register new distributors (and vehicles inline). Cannot see the dashboard, reports, distributor ledgers/balances, or the Users page.
 
 ## Deploying to Vercel
 

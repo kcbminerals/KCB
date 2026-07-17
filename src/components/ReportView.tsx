@@ -18,18 +18,10 @@ export default function ReportView({
   filters?: React.ReactNode;
   exportFilename: string;
 }) {
-  const csvHeaders = [
-    "Distributor",
-    "Jars loaded",
-    "Jars returned",
-    "Billed",
-    "Collected",
-    "Balance",
-  ];
+  const csvHeaders = ["Distributor", "Jars loaded", "Billed", "Collected", "Balance"];
   const csvRows = report.byDistributor.map((r) => [
     r.distributor_name,
     r.jars_loaded,
-    r.jars_returned,
     r.billed,
     r.collected,
     r.billed - r.collected,
@@ -37,7 +29,6 @@ export default function ReportView({
   csvRows.push([
     "Total",
     report.totals.jarsLoaded,
-    report.totals.jarsReturned,
     report.totals.billed,
     report.totals.collected,
     report.totals.billed - report.totals.collected,
@@ -63,17 +54,11 @@ export default function ReportView({
 
       {filters && <div>{filters}</div>}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-sm text-slate-500">Jars loaded</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">
             {report.totals.jarsLoaded}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Jars returned</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {report.totals.jarsReturned}
           </p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -100,7 +85,6 @@ export default function ReportView({
               <tr className="border-b border-slate-100 text-left text-slate-500">
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium text-right">Jars loaded</th>
-                <th className="px-4 py-2 font-medium text-right">Jars returned</th>
                 <th className="px-4 py-2 font-medium text-right">Billed</th>
                 <th className="px-4 py-2 font-medium text-right">Collected</th>
                 <th className="px-4 py-2 font-medium text-right">Balance</th>
@@ -109,7 +93,7 @@ export default function ReportView({
             <tbody>
               {report.byDistributor.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
                     No activity in this period.
                   </td>
                 </tr>
@@ -120,7 +104,6 @@ export default function ReportView({
                     {r.distributor_name}
                   </td>
                   <td className="px-4 py-2 text-right">{r.jars_loaded}</td>
-                  <td className="px-4 py-2 text-right">{r.jars_returned}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(r.billed)}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(r.collected)}</td>
                   <td className="px-4 py-2 text-right">
@@ -134,7 +117,6 @@ export default function ReportView({
                 <tr className="border-t border-slate-200 font-semibold text-slate-900">
                   <td className="px-4 py-2">Total</td>
                   <td className="px-4 py-2 text-right">{report.totals.jarsLoaded}</td>
-                  <td className="px-4 py-2 text-right">{report.totals.jarsReturned}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(report.totals.billed)}</td>
                   <td className="px-4 py-2 text-right">
                     {formatMoney(report.totals.collected)}

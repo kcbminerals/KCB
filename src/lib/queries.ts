@@ -331,10 +331,11 @@ export async function createDelivery(data: {
   distributorId: number;
   vehicleId?: number | null;
   jarsLoaded: number;
-  jarsReturned: number;
+  jarsReturned?: number;
   pricePerJar: number;
   paidAmount: number;
   notes?: string | null;
+  createdAt?: string | null;
 }): Promise<number> {
   const sheet = await getWorksheet("Deliveries");
   const rows = await sheet.getRows();
@@ -346,12 +347,12 @@ export async function createDelivery(data: {
     distributor_id: data.distributorId,
     vehicle_id: data.vehicleId ?? "",
     jars_loaded: data.jarsLoaded,
-    jars_returned: data.jarsReturned,
+    jars_returned: data.jarsReturned ?? 0,
     price_per_jar: data.pricePerJar,
     bill_amount: billAmount,
     paid_amount: data.paidAmount,
     notes: data.notes ?? "",
-    created_at: new Date().toISOString(),
+    created_at: data.createdAt ?? new Date().toISOString(),
   });
   return id;
 }
@@ -363,10 +364,11 @@ export async function updateDelivery(
     distributorId: number;
     vehicleId?: number | null;
     jarsLoaded: number;
-    jarsReturned: number;
+    jarsReturned?: number;
     pricePerJar: number;
     paidAmount: number;
     notes?: string | null;
+    createdAt?: string | null;
   }
 ): Promise<void> {
   const sheet = await getWorksheet("Deliveries");
@@ -379,11 +381,12 @@ export async function updateDelivery(
     distributor_id: data.distributorId,
     vehicle_id: data.vehicleId ?? "",
     jars_loaded: data.jarsLoaded,
-    jars_returned: data.jarsReturned,
+    jars_returned: data.jarsReturned ?? 0,
     price_per_jar: data.pricePerJar,
     bill_amount: billAmount,
     paid_amount: data.paidAmount,
     notes: data.notes ?? "",
+    ...(data.createdAt ? { created_at: data.createdAt } : {}),
   });
   await row.save();
 }
@@ -446,6 +449,7 @@ export async function createPayment(data: {
   amount: number;
   method?: string | null;
   notes?: string | null;
+  createdAt?: string | null;
 }): Promise<number> {
   const sheet = await getWorksheet("Payments");
   const rows = await sheet.getRows();
@@ -457,7 +461,7 @@ export async function createPayment(data: {
     amount: data.amount,
     method: data.method ?? "",
     notes: data.notes ?? "",
-    created_at: new Date().toISOString(),
+    created_at: data.createdAt ?? new Date().toISOString(),
   });
   return id;
 }

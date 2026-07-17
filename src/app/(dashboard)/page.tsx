@@ -39,12 +39,8 @@ export default async function DashboardPage() {
         <p className="text-sm text-slate-500">Today, {formatDate(today)}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatCard label="Jars loaded today" value={String(stats.todayJarsLoaded)} />
-        <StatCard
-          label="Jars returned today"
-          value={String(stats.todayJarsReturned)}
-        />
         <StatCard
           label="Collected today"
           value={formatMoney(stats.todayCollected)}

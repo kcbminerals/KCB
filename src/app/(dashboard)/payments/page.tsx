@@ -24,11 +24,10 @@ export default async function PaymentsPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         {distributors.length === 0 ? (
           <p className="text-sm text-slate-500">
-            Add a distributor first from the{" "}
-            <Link href="/distributors" className="text-sky-600 hover:underline">
-              Distributors
+            <Link href="/distributors/new" className="text-sky-600 hover:underline">
+              Add a distributor
             </Link>{" "}
-            page.
+            first, then record payments against them.
           </p>
         ) : (
           <PaymentForm distributors={distributors} />

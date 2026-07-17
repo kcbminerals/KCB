@@ -16,6 +16,7 @@ const ADMIN_NAV_ITEMS = [
 const STAFF_NAV_ITEMS = [
   { href: "/deliveries", label: "Deliveries" },
   { href: "/payments", label: "Payments" },
+  { href: "/distributors/new", label: "Add distributor" },
 ];
 
 export default async function DashboardLayout({

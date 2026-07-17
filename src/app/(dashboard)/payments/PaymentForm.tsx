@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createPaymentAction } from "./actions";
 import type { Distributor } from "@/lib/types";
-import { todayIso } from "@/lib/format";
+import { todayIso, nowTimeValue } from "@/lib/format";
 import DistributorCombobox from "@/components/DistributorCombobox";
 
 export default function PaymentForm({
@@ -16,20 +16,41 @@ export default function PaymentForm({
     undefined
   );
 
+  // The pre-filled time is the person's wall clock, which the server can't
+  // know at render time — hence suppressHydrationWarning on the input.
+  const [time, setTime] = useState(() => nowTimeValue());
+
   return (
     <form action={formAction} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="date" className="text-sm font-medium text-slate-700">
-          Date
-        </label>
-        <input
-          id="date"
-          name="date"
-          type="date"
-          required
-          defaultValue={todayIso()}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-        />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="date" className="text-sm font-medium text-slate-700">
+            Date
+          </label>
+          <input
+            id="date"
+            name="date"
+            type="date"
+            required
+            defaultValue={todayIso()}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="time" className="text-sm font-medium text-slate-700">
+            Time
+          </label>
+          <input
+            id="time"
+            name="time"
+            type="time"
+            required
+            suppressHydrationWarning
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          />
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         <label

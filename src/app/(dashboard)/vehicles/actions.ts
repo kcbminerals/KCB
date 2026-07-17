@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, verifySession } from "@/lib/auth";
 import { createVehicle, setVehicleActive } from "@/lib/queries";
 
 const vehicleSchema = z.object({
@@ -16,7 +16,9 @@ export async function createVehicleAction(
   _prevState: VehicleFormState,
   formData: FormData
 ): Promise<VehicleFormState> {
-  await requireAdmin();
+  // Staff can create vehicles inline while adding a distributor;
+  // deactivating vehicles stays admin-only.
+  await verifySession();
   const parsed = vehicleSchema.safeParse({
     name: formData.get("name"),
     plateNumber: formData.get("plateNumber"),
