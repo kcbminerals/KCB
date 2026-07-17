@@ -30,12 +30,19 @@ export default async function WeeklyReportPage({
   const filterQuery = `${distributorId ? `&distributorId=${distributorId}` : ""}${
     validCategory ? `&category=${validCategory}` : ""
   }`;
+  const filterLabel = distributorId
+    ? distributors.find((d) => d.id === Number(distributorId))?.name
+    : validCategory;
+  const exportFilename = `weekly-report-${from}-to-${to}${
+    filterLabel ? `-${filterLabel}` : ""
+  }`.replace(/\s+/g, "-");
 
   return (
     <ReportView
       title="Weekly report"
       subtitle={`${formatDate(from)} to ${formatDate(to)}`}
       report={report}
+      exportFilename={exportFilename}
       filters={
         <ReportFilters
           basePath="/reports/weekly"

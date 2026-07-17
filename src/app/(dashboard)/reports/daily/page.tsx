@@ -29,12 +29,20 @@ export default async function DailyReportPage({
   const filterQuery = `${distributorId ? `&distributorId=${distributorId}` : ""}${
     validCategory ? `&category=${validCategory}` : ""
   }`;
+  const filterLabel = distributorId
+    ? distributors.find((d) => d.id === Number(distributorId))?.name
+    : validCategory;
+  const exportFilename = `daily-sales-${anchor}${filterLabel ? `-${filterLabel}` : ""}`.replace(
+    /\s+/g,
+    "-"
+  );
 
   return (
     <ReportView
       title="Daily sales"
       subtitle={formatDate(anchor)}
       report={report}
+      exportFilename={exportFilename}
       filters={
         <ReportFilters
           basePath="/reports/daily"

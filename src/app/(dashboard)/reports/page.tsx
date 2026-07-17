@@ -4,6 +4,7 @@ import { listDistributorsSummary } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 import PrintButton from "@/components/PrintButton";
+import ExportCsvButton from "@/components/ExportCsvButton";
 
 export default async function ReportsPage() {
   await verifySession();
@@ -60,8 +61,19 @@ export default async function ReportsPage() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-900">All-time category overview</h2>
+          <ExportCsvButton
+            filename="all-time-category-overview.csv"
+            headers={["Category", "Jars out", "Total billed", "Total paid", "Outstanding due"]}
+            rows={byCategory.map((c) => [
+              c.category,
+              c.jarBalance,
+              c.totalBilled,
+              c.totalPaid,
+              c.totalDue,
+            ])}
+          />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -109,7 +121,28 @@ export default async function ReportsPage() {
           <h2 className="font-semibold text-slate-900">
             All-time distributor overview
           </h2>
-          <PrintButton />
+          <div className="flex items-center gap-2">
+            <ExportCsvButton
+              filename="all-time-distributor-overview.csv"
+              headers={[
+                "Distributor",
+                "Category",
+                "Jars out",
+                "Total billed",
+                "Total paid",
+                "Outstanding due",
+              ]}
+              rows={distributors.map((d) => [
+                d.name,
+                d.category,
+                d.jar_balance,
+                d.total_billed,
+                d.total_paid,
+                d.total_due,
+              ])}
+            />
+            <PrintButton />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

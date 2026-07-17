@@ -36,12 +36,19 @@ export default async function MonthlyReportPage({
   const filterQuery = `${distributorId ? `&distributorId=${distributorId}` : ""}${
     validCategory ? `&category=${validCategory}` : ""
   }`;
+  const filterLabel = distributorId
+    ? distributors.find((d) => d.id === Number(distributorId))?.name
+    : validCategory;
+  const exportFilename = `monthly-report-${anchor}${
+    filterLabel ? `-${filterLabel}` : ""
+  }`.replace(/\s+/g, "-");
 
   return (
     <ReportView
       title="Monthly report"
       subtitle={`${MONTH_NAMES[monthNum - 1]} ${year} (${formatDate(from)} to ${formatDate(to)})`}
       report={report}
+      exportFilename={exportFilename}
       filters={
         <ReportFilters
           basePath="/reports/monthly"

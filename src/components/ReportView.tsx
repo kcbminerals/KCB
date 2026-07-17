@@ -1,6 +1,7 @@
 import type { Report } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
 import PrintButton from "./PrintButton";
+import ExportCsvButton from "./ExportCsvButton";
 
 export default function ReportView({
   title,
@@ -8,13 +9,40 @@ export default function ReportView({
   report,
   nav,
   filters,
+  exportFilename,
 }: {
   title: string;
   subtitle: string;
   report: Report;
   nav?: React.ReactNode;
   filters?: React.ReactNode;
+  exportFilename: string;
 }) {
+  const csvHeaders = [
+    "Distributor",
+    "Jars loaded",
+    "Jars returned",
+    "Billed",
+    "Collected",
+    "Balance",
+  ];
+  const csvRows = report.byDistributor.map((r) => [
+    r.distributor_name,
+    r.jars_loaded,
+    r.jars_returned,
+    r.billed,
+    r.collected,
+    r.billed - r.collected,
+  ]);
+  csvRows.push([
+    "Total",
+    report.totals.jarsLoaded,
+    report.totals.jarsReturned,
+    report.totals.billed,
+    report.totals.collected,
+    report.totals.billed - report.totals.collected,
+  ]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -24,6 +52,11 @@ export default function ReportView({
         </div>
         <div className="flex items-center gap-2">
           {nav}
+          <ExportCsvButton
+            filename={`${exportFilename}.csv`}
+            headers={csvHeaders}
+            rows={csvRows}
+          />
           <PrintButton />
         </div>
       </div>
