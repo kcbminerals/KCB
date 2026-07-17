@@ -6,22 +6,42 @@ import {
   listDeliveries,
   listPayments,
 } from "@/lib/queries";
-import { formatMoney, formatDate, formatDateTime, formatTime } from "@/lib/format";
+import {
+  formatMoney,
+  formatDate,
+  formatDateTime,
+  formatTime,
+  todayIso,
+  weekRange,
+  monthRange,
+  currentYearMonth,
+} from "@/lib/format";
 import { setDistributorActiveAction } from "../actions";
+import PrintButton from "@/components/PrintButton";
+import ExportCsvButton from "@/components/ExportCsvButton";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default async function DistributorDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
   await requireAdmin();
   const { id } = await params;
+  const rawRange = await searchParams;
   const distributorId = Number(id);
   const distributor = await getDistributorSummary(distributorId);
   if (!distributor) notFound();
 
-  const deliveries = await listDeliveries({ distributorId });
-  const payments = await listPayments({ distributorId });
+  const from = rawRange.from && DATE_RE.test(rawRange.from) ? rawRange.from : undefined;
+  const to = rawRange.to && DATE_RE.test(rawRange.to) ? rawRange.to : undefined;
+  const hasRange = Boolean(from || to);
+
+  const deliveries = await listDeliveries({ distributorId, from, to });
+  const payments = await listPayments({ distributorId, from, to });
 
   type Entry = {
     date: string;
@@ -57,6 +77,29 @@ export default async function DistributorDetailPage({
     return a.created_at < b.created_at ? 1 : -1;
   });
 
+  const period = {
+    jarsLoaded: deliveries.reduce((sum, d) => sum + d.jars_loaded, 0),
+    billed: entries.reduce((sum, e) => sum + e.billed, 0),
+    collected: entries.reduce((sum, e) => sum + e.paid, 0),
+  };
+  const periodLabel = hasRange
+    ? `${from ? formatDate(from) : "start"} to ${to ? formatDate(to) : "today"}`
+    : "All time";
+
+  const week = weekRange(todayIso());
+  const month = monthRange(currentYearMonth());
+  const basePath = `/distributors/${distributorId}`;
+
+  const csvRows: (string | number)[][] = entries.map((e) => [
+    formatDate(e.date),
+    formatTime(e.created_at),
+    e.kind === "delivery" ? "Delivery" : "Payment",
+    e.description,
+    e.billed,
+    e.paid,
+  ]);
+  csvRows.push(["Total", "", "", "", period.billed, period.collected]);
+
   const toggleActive = setDistributorActiveAction.bind(
     null,
     distributorId,
@@ -91,6 +134,14 @@ export default async function DistributorDetailPage({
           </p>
         </div>
         <div className="flex gap-2 no-print">
+          <ExportCsvButton
+            filename={`${distributor.name.replace(/\s+/g, "-")}-report${
+              hasRange ? `-${from ?? "start"}-to-${to ?? "today"}` : ""
+            }.csv`}
+            headers={["Date", "Time", "Type", "Details", "Billed", "Paid"]}
+            rows={csvRows}
+          />
+          <PrintButton />
           <Link
             href={`/distributors/${distributorId}/edit`}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
@@ -118,7 +169,7 @@ export default async function DistributorDetailPage({
           <p className="mt-1 text-xl font-bold">{distributor.jar_balance}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Total billed</p>
+          <p className="text-sm text-slate-500">Total billed (all time)</p>
           <p className="mt-1 text-xl font-bold">{formatMoney(distributor.total_billed)}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -133,9 +184,99 @@ export default async function DistributorDetailPage({
         </div>
       </div>
 
+      <div className="no-print rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-3">
+          <form className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="from" className="text-xs font-medium text-slate-500">
+                From
+              </label>
+              <input
+                id="from"
+                name="from"
+                type="date"
+                defaultValue={from ?? ""}
+                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="to" className="text-xs font-medium text-slate-500">
+                To
+              </label>
+              <input
+                id="to"
+                name="to"
+                type="date"
+                defaultValue={to ?? ""}
+                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700"
+            >
+              Apply
+            </button>
+          </form>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <Link
+              href={`${basePath}?from=${todayIso()}&to=${todayIso()}`}
+              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Today
+            </Link>
+            <Link
+              href={`${basePath}?from=${week.from}&to=${week.to}`}
+              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+            >
+              This week
+            </Link>
+            <Link
+              href={`${basePath}?from=${month.from}&to=${month.to}`}
+              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+            >
+              This month
+            </Link>
+            <Link
+              href={basePath}
+              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+            >
+              All time
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-slate-500">Jars loaded ({periodLabel})</p>
+          <p className="mt-1 text-xl font-bold">{period.jarsLoaded}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-slate-500">Billed ({periodLabel})</p>
+          <p className="mt-1 text-xl font-bold">{formatMoney(period.billed)}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-slate-500">Collected ({periodLabel})</p>
+          <p className="mt-1 text-xl font-bold text-emerald-700">
+            {formatMoney(period.collected)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-slate-500">Balance ({periodLabel})</p>
+          <p
+            className={`mt-1 text-xl font-bold ${
+              period.billed - period.collected > 0 ? "text-amber-700" : "text-emerald-700"
+            }`}
+          >
+            {formatMoney(period.billed - period.collected)}
+          </p>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
-          <h2 className="font-semibold text-slate-900">Full ledger</h2>
+          <h2 className="font-semibold text-slate-900">Ledger — {periodLabel}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -151,7 +292,7 @@ export default async function DistributorDetailPage({
               {entries.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                    No activity yet.
+                    No activity in this period.
                   </td>
                 </tr>
               )}
@@ -182,6 +323,16 @@ export default async function DistributorDetailPage({
                 </tr>
               ))}
             </tbody>
+            {entries.length > 0 && (
+              <tfoot>
+                <tr className="border-t border-slate-200 font-semibold text-slate-900">
+                  <td className="px-4 py-2">Total</td>
+                  <td className="px-4 py-2"></td>
+                  <td className="px-4 py-2 text-right">{formatMoney(period.billed)}</td>
+                  <td className="px-4 py-2 text-right">{formatMoney(period.collected)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>

@@ -90,7 +90,13 @@ export default async function DistributorsPage() {
                   >
                     {formatMoney(d.total_due)}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    <Link
+                      href={`/distributors/${d.id}`}
+                      className="mr-3 text-sky-600 hover:underline"
+                    >
+                      Report
+                    </Link>
                     <Link
                       href={`/distributors/${d.id}/edit`}
                       className="text-sky-600 hover:underline"
