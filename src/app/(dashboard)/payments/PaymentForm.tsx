@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createPaymentAction } from "./actions";
 import type { Distributor } from "@/lib/types";
 import { todayIso, nowTimeValue } from "@/lib/format";
@@ -19,6 +19,19 @@ export default function PaymentForm({
   // The pre-filled time is the person's wall clock, which the server can't
   // know at render time — hence suppressHydrationWarning on the input.
   const [time, setTime] = useState(() => nowTimeValue());
+
+  // Confirm the save and refresh the time for the next entry.
+  const [showSaved, setShowSaved] = useState(false);
+  const lastSavedAt = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (state?.savedAt && state.savedAt !== lastSavedAt.current) {
+      lastSavedAt.current = state.savedAt;
+      setTime(nowTimeValue());
+      setShowSaved(true);
+      const timer = setTimeout(() => setShowSaved(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [state]);
 
   return (
     <form action={formAction} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -110,6 +123,14 @@ export default function PaymentForm({
       {state?.error && (
         <p className="sm:col-span-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
           {state.error}
+        </p>
+      )}
+      {showSaved && !state?.error && (
+        <p
+          role="status"
+          className="sm:col-span-3 rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
+        >
+          ✓ Payment saved successfully. Ready for the next entry.
         </p>
       )}
       <div className="sm:col-span-3">

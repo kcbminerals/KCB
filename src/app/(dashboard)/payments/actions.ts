@@ -17,7 +17,7 @@ const paymentSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
-export type PaymentFormState = { error?: string } | undefined;
+export type PaymentFormState = { error?: string; savedAt?: number } | undefined;
 
 export async function createPaymentAction(
   _prevState: PaymentFormState,
@@ -44,7 +44,7 @@ export async function createPaymentAction(
   revalidatePath("/payments");
   revalidatePath("/");
   revalidatePath("/distributors");
-  return undefined;
+  return { savedAt: Date.now() };
 }
 
 export async function deletePaymentAction(id: number) {

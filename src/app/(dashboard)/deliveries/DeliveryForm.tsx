@@ -51,9 +51,10 @@ export default function DeliveryForm({
 
   const billAmount = jarsLoaded * pricePerJar;
 
-  // After a successful new-delivery submission, clear the per-entry fields
-  // (jars/amount) so the form is ready for the next entry, while keeping
-  // date/distributor/vehicle/price for fast repeat entries.
+  // After a successful new-delivery submission, confirm the save and clear
+  // the per-entry fields (jars/amount) so the form is ready for the next
+  // entry, while keeping date/distributor/vehicle/price for repeat entries.
+  const [showSaved, setShowSaved] = useState(false);
   const lastSavedAt = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (!delivery && state?.savedAt && state.savedAt !== lastSavedAt.current) {
@@ -61,6 +62,9 @@ export default function DeliveryForm({
       setJarsLoaded(0);
       setPaidAmount(0);
       setTime(nowTimeValue());
+      setShowSaved(true);
+      const timer = setTimeout(() => setShowSaved(false), 5000);
+      return () => clearTimeout(timer);
     }
   }, [delivery, state]);
 
@@ -228,6 +232,15 @@ export default function DeliveryForm({
       {state?.error && (
         <p className="sm:col-span-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
           {state.error}
+        </p>
+      )}
+
+      {showSaved && !state?.error && (
+        <p
+          role="status"
+          className="sm:col-span-3 rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
+        >
+          ✓ Delivery saved successfully. Ready for the next entry.
         </p>
       )}
 
