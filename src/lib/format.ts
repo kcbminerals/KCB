@@ -1,4 +1,9 @@
 const CURRENCY_SYMBOL = "₹"; // Rupee sign
+const IST = "Asia/Kolkata";
+// Timestamps written by newer app versions are timezone-naive IST wall-clock
+// strings ("2026-07-17T18:05"); older rows carry a UTC marker ("...Z"). Naive
+// strings are shown as-is; marked ones get converted to IST for display.
+const HAS_TZ_MARKER = /(Z|[+-]\d{2}:?\d{2})$/;
 
 export function formatMoney(amount: number): string {
   const rounded = Math.round(amount * 100) / 100;
@@ -8,8 +13,16 @@ export function formatMoney(amount: number): string {
   })}`;
 }
 
+/** Current IST timestamp as a naive "YYYY-MM-DDTHH:MM:SS" string, the format
+ *  stored in the Google Sheet so times read naturally there. */
+export function nowIstTimestamp(): string {
+  // sv-SE formats as "YYYY-MM-DD HH:MM:SS"
+  return new Date().toLocaleString("sv-SE", { timeZone: IST }).replace(" ", "T");
+}
+
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  // en-CA formats as "YYYY-MM-DD"
+  return new Date().toLocaleDateString("en-CA", { timeZone: IST });
 }
 
 export function formatDate(iso: string): string {
@@ -17,35 +30,39 @@ export function formatDate(iso: string): string {
   return `${d}-${m}-${y}`;
 }
 
-/** Formats an ISO timestamp (e.g. a created_at value) as a readable local date + time. */
+/** Formats a stored timestamp (e.g. a created_at value) as an IST date + time. */
 export function formatDateTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  const datePart = `${String(date.getDate()).padStart(2, "0")}-${String(
-    date.getMonth() + 1
-  ).padStart(2, "0")}-${date.getFullYear()}`;
+  const tz = HAS_TZ_MARKER.test(iso) ? { timeZone: IST } : {};
+  const datePart = date
+    .toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", ...tz })
+    .replace(/\//g, "-");
   const timePart = date.toLocaleTimeString("en-IN", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    ...tz,
   });
   return `${datePart} ${timePart}`;
 }
 
-/** Current local time as an HH:MM string suitable for a <input type="time"> value. */
+/** Current IST time as an HH:MM string suitable for a <input type="time"> value. */
 export function nowTimeValue(): string {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return new Date().toLocaleString("sv-SE", { timeZone: IST }).slice(11, 16);
 }
 
 /** HH:MM extracted from a stored timestamp, for pre-filling a <input type="time">. */
 export function timeInputValue(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
+  if (HAS_TZ_MARKER.test(iso)) {
+    return d.toLocaleString("sv-SE", { timeZone: IST }).slice(11, 16);
+  }
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-/** Formats just the time portion of an ISO timestamp (e.g. a created_at value), e.g. "2:15 PM". */
+/** Formats just the time portion of a stored timestamp in IST, e.g. "2:15 PM". */
 export function formatTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
@@ -53,6 +70,7 @@ export function formatTime(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    ...(HAS_TZ_MARKER.test(iso) ? { timeZone: IST } : {}),
   });
 }
 
@@ -94,8 +112,7 @@ export function shiftMonth(yearMonth: string, months: number): string {
 }
 
 export function currentYearMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return todayIso().slice(0, 7);
 }
 
 function toIso(date: Date): string {

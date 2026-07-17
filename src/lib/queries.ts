@@ -1,5 +1,6 @@
 import "server-only";
 import { getWorksheet, nextId } from "@/lib/sheets";
+import { nowIstTimestamp } from "@/lib/format";
 import type {
   Distributor,
   DistributorWithVehicle,
@@ -111,7 +112,7 @@ export async function createDistributor(data: {
     category: data.category,
     vehicle_id: data.vehicleId ?? "",
     active: 1,
-    created_at: new Date().toISOString(),
+    created_at: nowIstTimestamp(),
   });
   return id;
 }
@@ -227,7 +228,7 @@ export async function createVehicle(data: {
     name: data.name,
     plate_number: data.plateNumber ?? "",
     active: 1,
-    created_at: new Date().toISOString(),
+    created_at: nowIstTimestamp(),
   });
   return id;
 }
@@ -352,7 +353,7 @@ export async function createDelivery(data: {
     bill_amount: billAmount,
     paid_amount: data.paidAmount,
     notes: data.notes ?? "",
-    created_at: data.createdAt ?? new Date().toISOString(),
+    created_at: data.createdAt ?? nowIstTimestamp(),
   });
   return id;
 }
@@ -461,7 +462,7 @@ export async function createPayment(data: {
     amount: data.amount,
     method: data.method ?? "",
     notes: data.notes ?? "",
-    created_at: data.createdAt ?? new Date().toISOString(),
+    created_at: data.createdAt ?? nowIstTimestamp(),
   });
   return id;
 }

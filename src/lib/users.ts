@@ -1,6 +1,7 @@
 import "server-only";
 import bcrypt from "bcryptjs";
 import { getWorksheet, nextId } from "@/lib/sheets";
+import { nowIstTimestamp } from "@/lib/format";
 import type { User, UserRole } from "@/lib/types";
 
 type SheetRow = {
@@ -51,7 +52,7 @@ export async function createUser(data: {
     name: data.name,
     role: data.role,
     active: 1,
-    created_at: new Date().toISOString(),
+    created_at: nowIstTimestamp(),
   });
   return id;
 }

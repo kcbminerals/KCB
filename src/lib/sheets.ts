@@ -2,6 +2,7 @@ import "server-only";
 import { JWT } from "google-auth-library";
 import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from "google-spreadsheet";
 import bcrypt from "bcryptjs";
+import { nowIstTimestamp } from "@/lib/format";
 
 const USERS_HEADERS = [
   "id",
@@ -135,7 +136,7 @@ async function migrate(): Promise<void> {
       name: "Admin",
       role: "admin",
       active: 1,
-      created_at: new Date().toISOString(),
+      created_at: nowIstTimestamp(),
     });
     console.log(
       `[kcb] Created default login -> username: admin, password: ${defaultPassword} (please change it after first login)`
