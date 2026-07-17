@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { verifySession } from "@/lib/auth";
-import { getReport } from "@/lib/queries";
+import { getReport, listDistributors } from "@/lib/queries";
 import { currentYearMonth, monthRange, shiftMonth, formatDate } from "@/lib/format";
 import ReportView from "@/components/ReportView";
+import ReportFilters from "@/components/ReportFilters";
+import type { DistributorCategory } from "@/lib/types";
+import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -12,39 +15,59 @@ const MONTH_NAMES = [
 export default async function MonthlyReportPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; distributorId?: string; category?: string }>;
 }) {
   await verifySession();
-  const { month } = await searchParams;
+  const { month, distributorId, category } = await searchParams;
   const anchor = month && /^\d{4}-\d{2}$/.test(month) ? month : currentYearMonth();
   const { from, to } = monthRange(anchor);
-  const report = await getReport(from, to);
+  const validCategory = (DISTRIBUTOR_CATEGORIES as readonly string[]).includes(category ?? "")
+    ? (category as DistributorCategory)
+    : undefined;
+  const report = await getReport(from, to, {
+    distributorId: distributorId ? Number(distributorId) : undefined,
+    category: validCategory,
+  });
+  const distributors = await listDistributors(true);
 
   const [year, monthNum] = anchor.split("-").map(Number);
   const prevMonth = shiftMonth(anchor, -1);
   const nextMonth = shiftMonth(anchor, 1);
+  const filterQuery = `${distributorId ? `&distributorId=${distributorId}` : ""}${
+    validCategory ? `&category=${validCategory}` : ""
+  }`;
 
   return (
     <ReportView
       title="Monthly report"
       subtitle={`${MONTH_NAMES[monthNum - 1]} ${year} (${formatDate(from)} to ${formatDate(to)})`}
       report={report}
+      filters={
+        <ReportFilters
+          basePath="/reports/monthly"
+          anchorParamName="month"
+          anchorValue={anchor}
+          distributors={distributors}
+          distributorId={distributorId ? Number(distributorId) : undefined}
+          category={validCategory}
+        />
+      }
       nav={
         <div className="no-print flex items-center gap-2 text-sm">
           <Link
-            href={`/reports/monthly?month=${prevMonth}`}
+            href={`/reports/monthly?month=${prevMonth}${filterQuery}`}
             className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
           >
             ← Previous
           </Link>
           <Link
-            href="/reports/monthly"
+            href={`/reports/monthly${filterQuery ? `?${filterQuery.slice(1)}` : ""}`}
             className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
           >
             This month
           </Link>
           <Link
-            href={`/reports/monthly?month=${nextMonth}`}
+            href={`/reports/monthly?month=${nextMonth}${filterQuery}`}
             className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
           >
             Next →

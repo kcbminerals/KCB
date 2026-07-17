@@ -1,26 +1,94 @@
 import "server-only";
-import { dbAll, dbGet, dbRun } from "@/lib/db";
+import { getWorksheet, nextId } from "@/lib/sheets";
 import type {
   Distributor,
+  DistributorWithVehicle,
   Vehicle,
   DeliveryWithNames,
   PaymentWithNames,
   DistributorSummary,
+  DistributorCategory,
 } from "@/lib/types";
+import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
+
+type SheetRow = {
+  get(key: string): unknown;
+  set(key: string, value: unknown): void;
+  assign(obj: Record<string, unknown>): void;
+  save(): Promise<void>;
+  delete(): Promise<unknown>;
+};
+
+function str(row: SheetRow, key: string): string | null {
+  const val = row.get(key);
+  if (val === undefined || val === null || val === "") return null;
+  return String(val);
+}
+
+function num(row: SheetRow, key: string): number {
+  const val = Number(row.get(key));
+  return Number.isFinite(val) ? val : 0;
+}
+
+function numOrNull(row: SheetRow, key: string): number | null {
+  const val = row.get(key);
+  if (val === undefined || val === null || val === "") return null;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : null;
+}
 
 // ---------- Distributors ----------
 
+function rowToDistributor(row: SheetRow): Distributor {
+  const category = str(row, "category");
+  return {
+    id: num(row, "id"),
+    name: str(row, "name") ?? "",
+    phone: str(row, "phone"),
+    address: str(row, "address"),
+    price_per_jar: num(row, "price_per_jar"),
+    category: (DISTRIBUTOR_CATEGORIES as readonly string[]).includes(category ?? "")
+      ? (category as DistributorCategory)
+      : "KCB1",
+    vehicle_id: numOrNull(row, "vehicle_id"),
+    active: num(row, "active"),
+    created_at: str(row, "created_at") ?? "",
+  };
+}
+
 export async function listDistributors(includeInactive = false): Promise<Distributor[]> {
-  if (includeInactive) {
-    return dbAll<Distributor>("SELECT * FROM distributors ORDER BY name COLLATE NOCASE");
-  }
-  return dbAll<Distributor>(
-    "SELECT * FROM distributors WHERE active = 1 ORDER BY name COLLATE NOCASE"
-  );
+  const sheet = await getWorksheet("Distributors");
+  const rows = await sheet.getRows();
+  const distributors = rows
+    .map(rowToDistributor)
+    .filter((d) => includeInactive || d.active === 1);
+  distributors.sort((a, b) => a.name.localeCompare(b.name));
+  return distributors;
+}
+
+export async function listDistributorsWithVehicle(
+  includeInactive = false
+): Promise<DistributorWithVehicle[]> {
+  const [distributors, vehicles] = await Promise.all([
+    listDistributors(includeInactive),
+    listVehicles(true),
+  ]);
+  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
+  return distributors.map((d) => {
+    const vehicle = d.vehicle_id ? vehicleMap.get(d.vehicle_id) : undefined;
+    return {
+      ...d,
+      vehicle_name: vehicle?.name ?? null,
+      vehicle_plate_number: vehicle?.plate_number ?? null,
+    };
+  });
 }
 
 export async function getDistributor(id: number): Promise<Distributor | undefined> {
-  return dbGet<Distributor>("SELECT * FROM distributors WHERE id = ?", [id]);
+  const sheet = await getWorksheet("Distributors");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  return row ? rowToDistributor(row) : undefined;
 }
 
 export async function createDistributor(data: {
@@ -28,12 +96,24 @@ export async function createDistributor(data: {
   phone?: string | null;
   address?: string | null;
   pricePerJar: number;
+  category: DistributorCategory;
+  vehicleId?: number | null;
 }): Promise<number> {
-  const result = await dbRun(
-    "INSERT INTO distributors (name, phone, address, price_per_jar) VALUES (?, ?, ?, ?)",
-    [data.name, data.phone ?? null, data.address ?? null, data.pricePerJar]
-  );
-  return result.lastInsertRowid;
+  const sheet = await getWorksheet("Distributors");
+  const rows = await sheet.getRows();
+  const id = nextId(rows);
+  await sheet.addRow({
+    id,
+    name: data.name,
+    phone: data.phone ?? "",
+    address: data.address ?? "",
+    price_per_jar: data.pricePerJar,
+    category: data.category,
+    vehicle_id: data.vehicleId ?? "",
+    active: 1,
+    created_at: new Date().toISOString(),
+  });
+  return id;
 }
 
 export async function updateDistributor(
@@ -43,51 +123,52 @@ export async function updateDistributor(
     phone?: string | null;
     address?: string | null;
     pricePerJar: number;
+    category: DistributorCategory;
+    vehicleId?: number | null;
   }
 ): Promise<void> {
-  await dbRun(
-    "UPDATE distributors SET name = ?, phone = ?, address = ?, price_per_jar = ? WHERE id = ?",
-    [data.name, data.phone ?? null, data.address ?? null, data.pricePerJar, id]
-  );
+  const sheet = await getWorksheet("Distributors");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (!row) return;
+  row.assign({
+    name: data.name,
+    phone: data.phone ?? "",
+    address: data.address ?? "",
+    price_per_jar: data.pricePerJar,
+    category: data.category,
+    vehicle_id: data.vehicleId ?? "",
+  });
+  await row.save();
 }
 
 export async function setDistributorActive(id: number, active: boolean): Promise<void> {
-  await dbRun("UPDATE distributors SET active = ? WHERE id = ?", [active ? 1 : 0, id]);
+  const sheet = await getWorksheet("Distributors");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (!row) return;
+  row.set("active", active ? 1 : 0);
+  await row.save();
 }
 
 export async function listDistributorsSummary(
   includeInactive = false
 ): Promise<DistributorSummary[]> {
-  const distributors = await listDistributors(includeInactive);
-  const deliveryAgg = await dbAll<{
-    distributor_id: number;
-    jars_loaded: number;
-    jars_returned: number;
-    total_billed: number;
-    total_paid_deliveries: number;
-  }>(
-    `SELECT distributor_id,
-            COALESCE(SUM(jars_loaded), 0) as jars_loaded,
-            COALESCE(SUM(jars_returned), 0) as jars_returned,
-            COALESCE(SUM(bill_amount), 0) as total_billed,
-            COALESCE(SUM(paid_amount), 0) as total_paid_deliveries
-     FROM deliveries GROUP BY distributor_id`
-  );
-  const paymentAgg = await dbAll<{ distributor_id: number; total_extra_paid: number }>(
-    `SELECT distributor_id, COALESCE(SUM(amount), 0) as total_extra_paid
-     FROM payments GROUP BY distributor_id`
-  );
-
-  const deliveryMap = new Map(deliveryAgg.map((d) => [d.distributor_id, d]));
-  const paymentMap = new Map(paymentAgg.map((p) => [p.distributor_id, p.total_extra_paid]));
+  const [distributors, deliveries, payments] = await Promise.all([
+    listDistributorsWithVehicle(includeInactive),
+    listDeliveries(),
+    listPayments(),
+  ]);
 
   return distributors.map((dist) => {
-    const d = deliveryMap.get(dist.id);
-    const extraPaid = paymentMap.get(dist.id) ?? 0;
-    const jarsLoaded = d?.jars_loaded ?? 0;
-    const jarsReturned = d?.jars_returned ?? 0;
-    const totalBilled = d?.total_billed ?? 0;
-    const totalPaid = (d?.total_paid_deliveries ?? 0) + extraPaid;
+    const distDeliveries = deliveries.filter((d) => d.distributor_id === dist.id);
+    const distPayments = payments.filter((p) => p.distributor_id === dist.id);
+    const jarsLoaded = distDeliveries.reduce((sum, d) => sum + d.jars_loaded, 0);
+    const jarsReturned = distDeliveries.reduce((sum, d) => sum + d.jars_returned, 0);
+    const totalBilled = distDeliveries.reduce((sum, d) => sum + d.bill_amount, 0);
+    const totalPaid =
+      distDeliveries.reduce((sum, d) => sum + d.paid_amount, 0) +
+      distPayments.reduce((sum, p) => sum + p.amount, 0);
     return {
       ...dist,
       jars_loaded: jarsLoaded,
@@ -103,88 +184,100 @@ export async function listDistributorsSummary(
 export async function getDistributorSummary(
   id: number
 ): Promise<DistributorSummary | undefined> {
-  const dist = await getDistributor(id);
-  if (!dist) return undefined;
-  const d = await dbGet<{
-    jars_loaded: number;
-    jars_returned: number;
-    total_billed: number;
-    total_paid_deliveries: number;
-  }>(
-    `SELECT COALESCE(SUM(jars_loaded), 0) as jars_loaded,
-            COALESCE(SUM(jars_returned), 0) as jars_returned,
-            COALESCE(SUM(bill_amount), 0) as total_billed,
-            COALESCE(SUM(paid_amount), 0) as total_paid_deliveries
-     FROM deliveries WHERE distributor_id = ?`,
-    [id]
-  );
-  const p = await dbGet<{ total: number }>(
-    "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE distributor_id = ?",
-    [id]
-  );
-  const totalPaid = (d?.total_paid_deliveries ?? 0) + (p?.total ?? 0);
-  return {
-    ...dist,
-    jars_loaded: d?.jars_loaded ?? 0,
-    jars_returned: d?.jars_returned ?? 0,
-    jar_balance: (d?.jars_loaded ?? 0) - (d?.jars_returned ?? 0),
-    total_billed: d?.total_billed ?? 0,
-    total_paid: totalPaid,
-    total_due: (d?.total_billed ?? 0) - totalPaid,
-  };
+  const summaries = await listDistributorsSummary(true);
+  return summaries.find((d) => d.id === id);
 }
 
 // ---------- Vehicles ----------
 
+function rowToVehicle(row: SheetRow): Vehicle {
+  return {
+    id: num(row, "id"),
+    name: str(row, "name") ?? "",
+    plate_number: str(row, "plate_number"),
+    active: num(row, "active"),
+    created_at: str(row, "created_at") ?? "",
+  };
+}
+
 export async function listVehicles(includeInactive = false): Promise<Vehicle[]> {
-  if (includeInactive) {
-    return dbAll<Vehicle>("SELECT * FROM vehicles ORDER BY name COLLATE NOCASE");
-  }
-  return dbAll<Vehicle>(
-    "SELECT * FROM vehicles WHERE active = 1 ORDER BY name COLLATE NOCASE"
-  );
+  const sheet = await getWorksheet("Vehicles");
+  const rows = await sheet.getRows();
+  const vehicles = rows.map(rowToVehicle).filter((v) => includeInactive || v.active === 1);
+  vehicles.sort((a, b) => a.name.localeCompare(b.name));
+  return vehicles;
 }
 
 export async function getVehicle(id: number): Promise<Vehicle | undefined> {
-  return dbGet<Vehicle>("SELECT * FROM vehicles WHERE id = ?", [id]);
+  const sheet = await getWorksheet("Vehicles");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  return row ? rowToVehicle(row) : undefined;
 }
 
 export async function createVehicle(data: {
   name: string;
   plateNumber?: string | null;
 }): Promise<number> {
-  const result = await dbRun("INSERT INTO vehicles (name, plate_number) VALUES (?, ?)", [
-    data.name,
-    data.plateNumber ?? null,
-  ]);
-  return result.lastInsertRowid;
+  const sheet = await getWorksheet("Vehicles");
+  const rows = await sheet.getRows();
+  const id = nextId(rows);
+  await sheet.addRow({
+    id,
+    name: data.name,
+    plate_number: data.plateNumber ?? "",
+    active: 1,
+    created_at: new Date().toISOString(),
+  });
+  return id;
 }
 
 export async function updateVehicle(
   id: number,
   data: { name: string; plateNumber?: string | null }
 ): Promise<void> {
-  await dbRun("UPDATE vehicles SET name = ?, plate_number = ? WHERE id = ?", [
-    data.name,
-    data.plateNumber ?? null,
-    id,
-  ]);
+  const sheet = await getWorksheet("Vehicles");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (!row) return;
+  row.assign({ name: data.name, plate_number: data.plateNumber ?? "" });
+  await row.save();
 }
 
 export async function setVehicleActive(id: number, active: boolean): Promise<void> {
-  await dbRun("UPDATE vehicles SET active = ? WHERE id = ?", [active ? 1 : 0, id]);
+  const sheet = await getWorksheet("Vehicles");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (!row) return;
+  row.set("active", active ? 1 : 0);
+  await row.save();
 }
 
 // ---------- Deliveries ----------
 
-const DELIVERY_SELECT = `
-  SELECT deliveries.*,
-         distributors.name as distributor_name,
-         vehicles.name as vehicle_name
-  FROM deliveries
-  JOIN distributors ON distributors.id = deliveries.distributor_id
-  LEFT JOIN vehicles ON vehicles.id = deliveries.vehicle_id
-`;
+async function rowToDeliveryWithNames(
+  row: SheetRow,
+  distributorMap: Map<number, Distributor>,
+  vehicleMap: Map<number, Vehicle>
+): Promise<DeliveryWithNames> {
+  const distributorId = num(row, "distributor_id");
+  const vehicleId = numOrNull(row, "vehicle_id");
+  return {
+    id: num(row, "id"),
+    date: str(row, "date") ?? "",
+    distributor_id: distributorId,
+    vehicle_id: vehicleId,
+    jars_loaded: num(row, "jars_loaded"),
+    jars_returned: num(row, "jars_returned"),
+    price_per_jar: num(row, "price_per_jar"),
+    bill_amount: num(row, "bill_amount"),
+    paid_amount: num(row, "paid_amount"),
+    notes: str(row, "notes"),
+    created_at: str(row, "created_at") ?? "",
+    distributor_name: distributorMap.get(distributorId)?.name ?? "Unknown",
+    vehicle_name: vehicleId ? (vehicleMap.get(vehicleId)?.name ?? null) : null,
+  };
+}
 
 export async function listDeliveries(filters?: {
   from?: string;
@@ -192,30 +285,45 @@ export async function listDeliveries(filters?: {
   distributorId?: number;
   limit?: number;
 }): Promise<DeliveryWithNames[]> {
-  const clauses: string[] = [];
-  const params: (string | number)[] = [];
-  if (filters?.from) {
-    clauses.push("deliveries.date >= ?");
-    params.push(filters.from);
-  }
-  if (filters?.to) {
-    clauses.push("deliveries.date <= ?");
-    params.push(filters.to);
-  }
-  if (filters?.distributorId) {
-    clauses.push("deliveries.distributor_id = ?");
-    params.push(filters.distributorId);
-  }
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const limit = filters?.limit ? `LIMIT ${Number(filters.limit)}` : "";
-  return dbAll<DeliveryWithNames>(
-    `${DELIVERY_SELECT} ${where} ORDER BY deliveries.date DESC, deliveries.id DESC ${limit}`,
-    params
+  const sheet = await getWorksheet("Deliveries");
+  const [rows, distributors, vehicles] = await Promise.all([
+    sheet.getRows(),
+    listDistributors(true),
+    listVehicles(true),
+  ]);
+  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
+
+  let deliveries = await Promise.all(
+    rows.map((row) => rowToDeliveryWithNames(row, distributorMap, vehicleMap))
   );
+
+  if (filters?.from) deliveries = deliveries.filter((d) => d.date >= filters.from!);
+  if (filters?.to) deliveries = deliveries.filter((d) => d.date <= filters.to!);
+  if (filters?.distributorId)
+    deliveries = deliveries.filter((d) => d.distributor_id === filters.distributorId);
+
+  deliveries.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return b.id - a.id;
+  });
+
+  if (filters?.limit) deliveries = deliveries.slice(0, filters.limit);
+  return deliveries;
 }
 
 export async function getDelivery(id: number): Promise<DeliveryWithNames | undefined> {
-  return dbGet<DeliveryWithNames>(`${DELIVERY_SELECT} WHERE deliveries.id = ?`, [id]);
+  const sheet = await getWorksheet("Deliveries");
+  const [rows, distributors, vehicles] = await Promise.all([
+    sheet.getRows(),
+    listDistributors(true),
+    listVehicles(true),
+  ]);
+  const row = rows.find((r) => num(r, "id") === id);
+  if (!row) return undefined;
+  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
+  return rowToDeliveryWithNames(row, distributorMap, vehicleMap);
 }
 
 export async function createDelivery(data: {
@@ -228,24 +336,24 @@ export async function createDelivery(data: {
   paidAmount: number;
   notes?: string | null;
 }): Promise<number> {
+  const sheet = await getWorksheet("Deliveries");
+  const rows = await sheet.getRows();
+  const id = nextId(rows);
   const billAmount = data.jarsLoaded * data.pricePerJar;
-  const result = await dbRun(
-    `INSERT INTO deliveries
-      (date, distributor_id, vehicle_id, jars_loaded, jars_returned, price_per_jar, bill_amount, paid_amount, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      data.date,
-      data.distributorId,
-      data.vehicleId ?? null,
-      data.jarsLoaded,
-      data.jarsReturned,
-      data.pricePerJar,
-      billAmount,
-      data.paidAmount,
-      data.notes ?? null,
-    ]
-  );
-  return result.lastInsertRowid;
+  await sheet.addRow({
+    id,
+    date: data.date,
+    distributor_id: data.distributorId,
+    vehicle_id: data.vehicleId ?? "",
+    jars_loaded: data.jarsLoaded,
+    jars_returned: data.jarsReturned,
+    price_per_jar: data.pricePerJar,
+    bill_amount: billAmount,
+    paid_amount: data.paidAmount,
+    notes: data.notes ?? "",
+    created_at: new Date().toISOString(),
+  });
+  return id;
 }
 
 export async function updateDelivery(
@@ -261,38 +369,50 @@ export async function updateDelivery(
     notes?: string | null;
   }
 ): Promise<void> {
+  const sheet = await getWorksheet("Deliveries");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (!row) return;
   const billAmount = data.jarsLoaded * data.pricePerJar;
-  await dbRun(
-    `UPDATE deliveries SET
-      date = ?, distributor_id = ?, vehicle_id = ?, jars_loaded = ?, jars_returned = ?,
-      price_per_jar = ?, bill_amount = ?, paid_amount = ?, notes = ?
-     WHERE id = ?`,
-    [
-      data.date,
-      data.distributorId,
-      data.vehicleId ?? null,
-      data.jarsLoaded,
-      data.jarsReturned,
-      data.pricePerJar,
-      billAmount,
-      data.paidAmount,
-      data.notes ?? null,
-      id,
-    ]
-  );
+  row.assign({
+    date: data.date,
+    distributor_id: data.distributorId,
+    vehicle_id: data.vehicleId ?? "",
+    jars_loaded: data.jarsLoaded,
+    jars_returned: data.jarsReturned,
+    price_per_jar: data.pricePerJar,
+    bill_amount: billAmount,
+    paid_amount: data.paidAmount,
+    notes: data.notes ?? "",
+  });
+  await row.save();
 }
 
 export async function deleteDelivery(id: number): Promise<void> {
-  await dbRun("DELETE FROM deliveries WHERE id = ?", [id]);
+  const sheet = await getWorksheet("Deliveries");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (row) await row.delete();
 }
 
 // ---------- Payments ----------
 
-const PAYMENT_SELECT = `
-  SELECT payments.*, distributors.name as distributor_name
-  FROM payments
-  JOIN distributors ON distributors.id = payments.distributor_id
-`;
+function rowToPaymentWithNames(
+  row: SheetRow,
+  distributorMap: Map<number, Distributor>
+): PaymentWithNames {
+  const distributorId = num(row, "distributor_id");
+  return {
+    id: num(row, "id"),
+    date: str(row, "date") ?? "",
+    distributor_id: distributorId,
+    amount: num(row, "amount"),
+    method: str(row, "method"),
+    notes: str(row, "notes"),
+    created_at: str(row, "created_at") ?? "",
+    distributor_name: distributorMap.get(distributorId)?.name ?? "Unknown",
+  };
+}
 
 export async function listPayments(filters?: {
   from?: string;
@@ -300,26 +420,24 @@ export async function listPayments(filters?: {
   distributorId?: number;
   limit?: number;
 }): Promise<PaymentWithNames[]> {
-  const clauses: string[] = [];
-  const params: (string | number)[] = [];
-  if (filters?.from) {
-    clauses.push("payments.date >= ?");
-    params.push(filters.from);
-  }
-  if (filters?.to) {
-    clauses.push("payments.date <= ?");
-    params.push(filters.to);
-  }
-  if (filters?.distributorId) {
-    clauses.push("payments.distributor_id = ?");
-    params.push(filters.distributorId);
-  }
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const limit = filters?.limit ? `LIMIT ${Number(filters.limit)}` : "";
-  return dbAll<PaymentWithNames>(
-    `${PAYMENT_SELECT} ${where} ORDER BY payments.date DESC, payments.id DESC ${limit}`,
-    params
-  );
+  const sheet = await getWorksheet("Payments");
+  const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
+  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+
+  let payments = rows.map((row) => rowToPaymentWithNames(row, distributorMap));
+
+  if (filters?.from) payments = payments.filter((p) => p.date >= filters.from!);
+  if (filters?.to) payments = payments.filter((p) => p.date <= filters.to!);
+  if (filters?.distributorId)
+    payments = payments.filter((p) => p.distributor_id === filters.distributorId);
+
+  payments.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return b.id - a.id;
+  });
+
+  if (filters?.limit) payments = payments.slice(0, filters.limit);
+  return payments;
 }
 
 export async function createPayment(data: {
@@ -329,59 +447,55 @@ export async function createPayment(data: {
   method?: string | null;
   notes?: string | null;
 }): Promise<number> {
-  const result = await dbRun(
-    "INSERT INTO payments (date, distributor_id, amount, method, notes) VALUES (?, ?, ?, ?, ?)",
-    [data.date, data.distributorId, data.amount, data.method ?? null, data.notes ?? null]
-  );
-  return result.lastInsertRowid;
+  const sheet = await getWorksheet("Payments");
+  const rows = await sheet.getRows();
+  const id = nextId(rows);
+  await sheet.addRow({
+    id,
+    date: data.date,
+    distributor_id: data.distributorId,
+    amount: data.amount,
+    method: data.method ?? "",
+    notes: data.notes ?? "",
+    created_at: new Date().toISOString(),
+  });
+  return id;
 }
 
 export async function deletePayment(id: number): Promise<void> {
-  await dbRun("DELETE FROM payments WHERE id = ?", [id]);
+  const sheet = await getWorksheet("Payments");
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (row) await row.delete();
 }
 
 // ---------- Reports & Dashboard ----------
 
 export async function getDashboardStats(todayIso: string) {
-  const today = await dbGet<{
-    jars_loaded: number;
-    jars_returned: number;
-    billed: number;
-    collected: number;
-  }>(
-    `SELECT COALESCE(SUM(jars_loaded), 0) as jars_loaded,
-            COALESCE(SUM(jars_returned), 0) as jars_returned,
-            COALESCE(SUM(bill_amount), 0) as billed,
-            COALESCE(SUM(paid_amount), 0) as collected
-     FROM deliveries WHERE date = ?`,
-    [todayIso]
-  );
-  const todayExtraPayments = await dbGet<{ total: number }>(
-    "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE date = ?",
-    [todayIso]
-  );
+  const [deliveries, payments] = await Promise.all([listDeliveries(), listPayments()]);
 
-  const overall = await dbGet<{
-    billed: number;
-    paid: number;
-    jars_loaded: number;
-    jars_returned: number;
-  }>(
-    `SELECT COALESCE(SUM(bill_amount), 0) as billed, COALESCE(SUM(paid_amount), 0) as paid,
-            COALESCE(SUM(jars_loaded), 0) as jars_loaded, COALESCE(SUM(jars_returned), 0) as jars_returned
-     FROM deliveries`
-  );
-  const overallExtraPayments = await dbGet<{ total: number }>(
-    "SELECT COALESCE(SUM(amount), 0) as total FROM payments"
-  );
+  const todayDeliveries = deliveries.filter((d) => d.date === todayIso);
+  const todayPayments = payments.filter((p) => p.date === todayIso);
+
+  const todayJarsLoaded = todayDeliveries.reduce((sum, d) => sum + d.jars_loaded, 0);
+  const todayJarsReturned = todayDeliveries.reduce((sum, d) => sum + d.jars_returned, 0);
+  const todayCollected =
+    todayDeliveries.reduce((sum, d) => sum + d.paid_amount, 0) +
+    todayPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  const totalBilled = deliveries.reduce((sum, d) => sum + d.bill_amount, 0);
+  const totalPaid =
+    deliveries.reduce((sum, d) => sum + d.paid_amount, 0) +
+    payments.reduce((sum, p) => sum + p.amount, 0);
+  const totalJarsLoaded = deliveries.reduce((sum, d) => sum + d.jars_loaded, 0);
+  const totalJarsReturned = deliveries.reduce((sum, d) => sum + d.jars_returned, 0);
 
   return {
-    todayJarsLoaded: today?.jars_loaded ?? 0,
-    todayJarsReturned: today?.jars_returned ?? 0,
-    todayCollected: (today?.collected ?? 0) + (todayExtraPayments?.total ?? 0),
-    totalOutstandingDue:
-      (overall?.billed ?? 0) - ((overall?.paid ?? 0) + (overallExtraPayments?.total ?? 0)),
-    totalJarsOut: (overall?.jars_loaded ?? 0) - (overall?.jars_returned ?? 0),
+    todayJarsLoaded,
+    todayJarsReturned,
+    todayCollected,
+    totalOutstandingDue: totalBilled - totalPaid,
+    totalJarsOut: totalJarsLoaded - totalJarsReturned,
   };
 }
 
@@ -406,59 +520,69 @@ export type Report = {
   byDistributor: ReportRow[];
 };
 
-export async function getReport(from: string, to: string): Promise<Report> {
-  const deliveryRows = await dbAll<{
-    distributor_id: number;
-    distributor_name: string;
-    jars_loaded: number;
-    jars_returned: number;
-    billed: number;
-    collected_from_deliveries: number;
-  }>(
-    `SELECT distributor_id, distributors.name as distributor_name,
-            COALESCE(SUM(jars_loaded), 0) as jars_loaded,
-            COALESCE(SUM(jars_returned), 0) as jars_returned,
-            COALESCE(SUM(bill_amount), 0) as billed,
-            COALESCE(SUM(paid_amount), 0) as collected_from_deliveries
-     FROM deliveries
-     JOIN distributors ON distributors.id = deliveries.distributor_id
-     WHERE date >= ? AND date <= ?
-     GROUP BY distributor_id`,
-    [from, to]
-  );
+export async function getReport(
+  from: string,
+  to: string,
+  filters?: { distributorId?: number; category?: DistributorCategory }
+): Promise<Report> {
+  const [allDeliveries, allPayments, distributors] = await Promise.all([
+    listDeliveries({ from, to }),
+    listPayments({ from, to }),
+    listDistributors(true),
+  ]);
 
-  const paymentRows = await dbAll<{ distributor_id: number; total: number }>(
-    `SELECT distributor_id, COALESCE(SUM(amount), 0) as total
-     FROM payments WHERE date >= ? AND date <= ? GROUP BY distributor_id`,
-    [from, to]
-  );
-  const paymentMap = new Map(paymentRows.map((p) => [p.distributor_id, p.total]));
+  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+  const matchesFilters = (distributorId: number) => {
+    if (filters?.distributorId && distributorId !== filters.distributorId) return false;
+    if (filters?.category) {
+      const dist = distributorMap.get(distributorId);
+      if (dist?.category !== filters.category) return false;
+    }
+    return true;
+  };
+  const deliveries = allDeliveries.filter((d) => matchesFilters(d.distributor_id));
+  const payments = allPayments.filter((p) => matchesFilters(p.distributor_id));
 
-  const byDistributor: ReportRow[] = deliveryRows.map((r) => ({
-    distributor_id: r.distributor_id,
-    distributor_name: r.distributor_name,
-    jars_loaded: r.jars_loaded,
-    jars_returned: r.jars_returned,
-    billed: r.billed,
-    collected: r.collected_from_deliveries + (paymentMap.get(r.distributor_id) ?? 0),
-  }));
+  const byDistributorMap = new Map<number, ReportRow>();
 
-  // Include distributors who only made a standalone payment in this range
-  for (const p of paymentRows) {
-    if (!byDistributor.find((b) => b.distributor_id === p.distributor_id)) {
-      const dist = await getDistributor(p.distributor_id);
-      byDistributor.push({
-        distributor_id: p.distributor_id,
-        distributor_name: dist?.name ?? "Unknown",
-        jars_loaded: 0,
-        jars_returned: 0,
-        billed: 0,
-        collected: p.total,
+  for (const d of deliveries) {
+    const existing = byDistributorMap.get(d.distributor_id);
+    if (existing) {
+      existing.jars_loaded += d.jars_loaded;
+      existing.jars_returned += d.jars_returned;
+      existing.billed += d.bill_amount;
+      existing.collected += d.paid_amount;
+    } else {
+      byDistributorMap.set(d.distributor_id, {
+        distributor_id: d.distributor_id,
+        distributor_name: d.distributor_name,
+        jars_loaded: d.jars_loaded,
+        jars_returned: d.jars_returned,
+        billed: d.bill_amount,
+        collected: d.paid_amount,
       });
     }
   }
 
-  byDistributor.sort((a, b) => a.distributor_name.localeCompare(b.distributor_name));
+  for (const p of payments) {
+    const existing = byDistributorMap.get(p.distributor_id);
+    if (existing) {
+      existing.collected += p.amount;
+    } else {
+      byDistributorMap.set(p.distributor_id, {
+        distributor_id: p.distributor_id,
+        distributor_name: p.distributor_name,
+        jars_loaded: 0,
+        jars_returned: 0,
+        billed: 0,
+        collected: p.amount,
+      });
+    }
+  }
+
+  const byDistributor = Array.from(byDistributorMap.values()).sort((a, b) =>
+    a.distributor_name.localeCompare(b.distributor_name)
+  );
 
   const totals = byDistributor.reduce(
     (acc, r) => ({

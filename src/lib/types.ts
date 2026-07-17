@@ -1,11 +1,21 @@
+export const DISTRIBUTOR_CATEGORIES = ["KCB1", "KCB2", "Enrich"] as const;
+export type DistributorCategory = (typeof DISTRIBUTOR_CATEGORIES)[number];
+
 export type Distributor = {
   id: number;
   name: string;
   phone: string | null;
   address: string | null;
   price_per_jar: number;
+  category: DistributorCategory;
+  vehicle_id: number | null;
   active: number;
   created_at: string;
+};
+
+export type DistributorWithVehicle = Distributor & {
+  vehicle_name: string | null;
+  vehicle_plate_number: string | null;
 };
 
 export type Vehicle = {
@@ -49,7 +59,7 @@ export type PaymentWithNames = Payment & {
   distributor_name: string;
 };
 
-export type DistributorSummary = Distributor & {
+export type DistributorSummary = DistributorWithVehicle & {
   jars_loaded: number;
   jars_returned: number;
   jar_balance: number;

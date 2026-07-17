@@ -1,45 +1,44 @@
 import Link from "next/link";
 import { verifySession } from "@/lib/auth";
 import { getReport, listDistributors } from "@/lib/queries";
-import { todayIso, weekRange, shiftWeek, formatDate } from "@/lib/format";
+import { todayIso, shiftDay, formatDate } from "@/lib/format";
 import ReportView from "@/components/ReportView";
 import ReportFilters from "@/components/ReportFilters";
 import type { DistributorCategory } from "@/lib/types";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 
-export default async function WeeklyReportPage({
+export default async function DailyReportPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string; distributorId?: string; category?: string }>;
+  searchParams: Promise<{ day?: string; distributorId?: string; category?: string }>;
 }) {
   await verifySession();
-  const { week, distributorId, category } = await searchParams;
-  const anchor = week && /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : todayIso();
-  const { from, to } = weekRange(anchor);
+  const { day, distributorId, category } = await searchParams;
+  const anchor = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : todayIso();
   const validCategory = (DISTRIBUTOR_CATEGORIES as readonly string[]).includes(category ?? "")
     ? (category as DistributorCategory)
     : undefined;
-  const report = await getReport(from, to, {
+  const report = await getReport(anchor, anchor, {
     distributorId: distributorId ? Number(distributorId) : undefined,
     category: validCategory,
   });
   const distributors = await listDistributors(true);
 
-  const prevWeek = shiftWeek(anchor, -1);
-  const nextWeek = shiftWeek(anchor, 1);
+  const prevDay = shiftDay(anchor, -1);
+  const nextDay = shiftDay(anchor, 1);
   const filterQuery = `${distributorId ? `&distributorId=${distributorId}` : ""}${
     validCategory ? `&category=${validCategory}` : ""
   }`;
 
   return (
     <ReportView
-      title="Weekly report"
-      subtitle={`${formatDate(from)} to ${formatDate(to)}`}
+      title="Daily sales"
+      subtitle={formatDate(anchor)}
       report={report}
       filters={
         <ReportFilters
-          basePath="/reports/weekly"
-          anchorParamName="week"
+          basePath="/reports/daily"
+          anchorParamName="day"
           anchorValue={anchor}
           distributors={distributors}
           distributorId={distributorId ? Number(distributorId) : undefined}
@@ -49,19 +48,19 @@ export default async function WeeklyReportPage({
       nav={
         <div className="no-print flex items-center gap-2 text-sm">
           <Link
-            href={`/reports/weekly?week=${prevWeek}${filterQuery}`}
+            href={`/reports/daily?day=${prevDay}${filterQuery}`}
             className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
           >
             ← Previous
           </Link>
           <Link
-            href={`/reports/weekly${filterQuery ? `?${filterQuery.slice(1)}` : ""}`}
+            href={`/reports/daily${filterQuery ? `?${filterQuery.slice(1)}` : ""}`}
             className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
           >
-            This week
+            Today
           </Link>
           <Link
-            href={`/reports/weekly?week=${nextWeek}${filterQuery}`}
+            href={`/reports/daily?day=${nextDay}${filterQuery}`}
             className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
           >
             Next →

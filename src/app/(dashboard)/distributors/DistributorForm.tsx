@@ -2,11 +2,13 @@
 
 import { useActionState } from "react";
 import type { DistributorFormState } from "./actions";
-import type { Distributor } from "@/lib/types";
+import type { Distributor, Vehicle } from "@/lib/types";
+import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 
 export default function DistributorForm({
   action,
   distributor,
+  vehicles,
   submitLabel = "Save distributor",
 }: {
   action: (
@@ -14,6 +16,7 @@ export default function DistributorForm({
     formData: FormData
   ) => Promise<DistributorFormState>;
   distributor?: Distributor;
+  vehicles: Vehicle[];
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -68,6 +71,43 @@ export default function DistributorForm({
           defaultValue={distributor?.price_per_jar ?? ""}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="category" className="text-sm font-medium text-slate-700">
+          Category
+        </label>
+        <select
+          id="category"
+          name="category"
+          required
+          defaultValue={distributor?.category ?? DISTRIBUTOR_CATEGORIES[0]}
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        >
+          {DISTRIBUTOR_CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="vehicleId" className="text-sm font-medium text-slate-700">
+          Vehicle number
+        </label>
+        <select
+          id="vehicleId"
+          name="vehicleId"
+          defaultValue={distributor?.vehicle_id ?? ""}
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        >
+          <option value="">— none —</option>
+          {vehicles.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
+              {v.plate_number ? ` (${v.plate_number})` : ""}
+            </option>
+          ))}
+        </select>
       </div>
       {state?.error && (
         <p className="sm:col-span-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">

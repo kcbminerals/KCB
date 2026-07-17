@@ -6,7 +6,7 @@ import {
   listDeliveries,
   listPayments,
 } from "@/lib/queries";
-import { formatMoney, formatDate } from "@/lib/format";
+import { formatMoney, formatDate, formatDateTime } from "@/lib/format";
 import { setDistributorActiveAction } from "../actions";
 
 export default async function DistributorDetailPage({
@@ -61,9 +61,27 @@ export default async function DistributorDetailPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">{distributor.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900">{distributor.name}</h1>
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+              {distributor.category}
+            </span>
+          </div>
           <p className="text-sm text-slate-500">
             {distributor.phone ?? "No phone"} · {distributor.address ?? "No address"}
+          </p>
+          <p className="text-sm text-slate-500">
+            Vehicle:{" "}
+            {distributor.vehicle_name
+              ? `${distributor.vehicle_name}${
+                  distributor.vehicle_plate_number
+                    ? ` (${distributor.vehicle_plate_number})`
+                    : ""
+                }`
+              : "— none —"}
+          </p>
+          <p className="text-xs text-slate-400">
+            Added {formatDateTime(distributor.created_at)}
           </p>
         </div>
         <div className="flex gap-2 no-print">

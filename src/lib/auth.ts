@@ -2,7 +2,7 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { dbGet, dbRun } from "@/lib/db";
+import { getWorksheet } from "@/lib/sheets";
 import { createSession, deleteSession, getSession } from "@/lib/session";
 
 type UserRow = {
@@ -12,8 +12,26 @@ type UserRow = {
   name: string;
 };
 
+async function findUserRow(predicate: (row: {
+  get(key: string): unknown;
+}) => boolean) {
+  const sheet = await getWorksheet("Users");
+  const rows = await sheet.getRows();
+  return rows.find(predicate);
+}
+
+function toUser(row: { get(key: string): unknown }): UserRow {
+  return {
+    id: Number(row.get("id")),
+    username: String(row.get("username")),
+    password_hash: String(row.get("password_hash")),
+    name: String(row.get("name")),
+  };
+}
+
 export async function findUserByUsername(username: string): Promise<UserRow | undefined> {
-  return dbGet<UserRow>("SELECT * FROM users WHERE username = ?", [username]);
+  const row = await findUserRow((r) => String(r.get("username")) === username);
+  return row ? toUser(row) : undefined;
 }
 
 export async function attemptLogin(
@@ -50,10 +68,11 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const user = await dbGet<UserRow>("SELECT * FROM users WHERE id = ?", [userId]);
-  if (!user) {
+  const row = await findUserRow((r) => Number(r.get("id")) === userId);
+  if (!row) {
     return { ok: false, error: "User not found." };
   }
+  const user = toUser(row);
   const valid = await bcrypt.compare(currentPassword, user.password_hash);
   if (!valid) {
     return { ok: false, error: "Current password is incorrect." };
@@ -62,6 +81,7 @@ export async function changePassword(
     return { ok: false, error: "New password must be at least 6 characters." };
   }
   const hash = await bcrypt.hash(newPassword, 10);
-  await dbRun("UPDATE users SET password_hash = ? WHERE id = ?", [hash, userId]);
+  row.set("password_hash", hash);
+  await row.save();
   return { ok: true };
 }

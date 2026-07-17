@@ -9,27 +9,37 @@ import {
   updateDistributor,
   setDistributorActive,
 } from "@/lib/queries";
+import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 
 const distributorSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   phone: z.string().trim().optional(),
   address: z.string().trim().optional(),
   pricePerJar: z.coerce.number().min(0, "Price must be 0 or more"),
+  category: z.enum(DISTRIBUTOR_CATEGORIES),
+  vehicleId: z.coerce.number().int().positive().optional(),
 });
 
 export type DistributorFormState = { error?: string } | undefined;
+
+function parseDistributor(formData: FormData) {
+  const vehicleRaw = formData.get("vehicleId");
+  return distributorSchema.safeParse({
+    name: formData.get("name"),
+    phone: formData.get("phone"),
+    address: formData.get("address"),
+    pricePerJar: formData.get("pricePerJar"),
+    category: formData.get("category"),
+    vehicleId: vehicleRaw ? vehicleRaw : undefined,
+  });
+}
 
 export async function createDistributorAction(
   _prevState: DistributorFormState,
   formData: FormData
 ): Promise<DistributorFormState> {
   await verifySession();
-  const parsed = distributorSchema.safeParse({
-    name: formData.get("name"),
-    phone: formData.get("phone"),
-    address: formData.get("address"),
-    pricePerJar: formData.get("pricePerJar"),
-  });
+  const parsed = parseDistributor(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
@@ -44,12 +54,7 @@ export async function updateDistributorAction(
   formData: FormData
 ): Promise<DistributorFormState> {
   await verifySession();
-  const parsed = distributorSchema.safeParse({
-    name: formData.get("name"),
-    phone: formData.get("phone"),
-    address: formData.get("address"),
-    pricePerJar: formData.get("pricePerJar"),
-  });
+  const parsed = parseDistributor(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }

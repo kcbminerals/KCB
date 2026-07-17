@@ -7,11 +7,13 @@ export default function ReportView({
   subtitle,
   report,
   nav,
+  filters,
 }: {
   title: string;
   subtitle: string;
   report: Report;
   nav?: React.ReactNode;
+  filters?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -25,6 +27,8 @@ export default function ReportView({
           <PrintButton />
         </div>
       </div>
+
+      {filters && <div>{filters}</div>}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

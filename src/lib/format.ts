@@ -17,6 +17,27 @@ export function formatDate(iso: string): string {
   return `${d}-${m}-${y}`;
 }
 
+/** Formats an ISO timestamp (e.g. a created_at value) as a readable local date + time. */
+export function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const datePart = `${String(date.getDate()).padStart(2, "0")}-${String(
+    date.getMonth() + 1
+  ).padStart(2, "0")}-${date.getFullYear()}`;
+  const timePart = date.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${datePart} ${timePart}`;
+}
+
+export function shiftDay(iso: string, days: number): string {
+  const date = new Date(`${iso}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return toIso(date);
+}
+
 /** Monday-start week containing the given ISO date. */
 export function weekRange(iso: string): { from: string; to: string } {
   const date = new Date(`${iso}T00:00:00`);

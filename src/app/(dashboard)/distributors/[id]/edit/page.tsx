@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { verifySession } from "@/lib/auth";
-import { getDistributor } from "@/lib/queries";
+import { getDistributor, listVehicles } from "@/lib/queries";
 import DistributorForm from "../../DistributorForm";
 import { updateDistributorAction } from "../../actions";
 
@@ -11,7 +11,10 @@ export default async function EditDistributorPage({
 }) {
   await verifySession();
   const { id } = await params;
-  const distributor = await getDistributor(Number(id));
+  const [distributor, vehicles] = await Promise.all([
+    getDistributor(Number(id)),
+    listVehicles(true),
+  ]);
   if (!distributor) notFound();
 
   const action = updateDistributorAction.bind(null, distributor.id);
@@ -25,6 +28,7 @@ export default async function EditDistributorPage({
         <DistributorForm
           action={action}
           distributor={distributor}
+          vehicles={vehicles}
           submitLabel="Save changes"
         />
       </div>
