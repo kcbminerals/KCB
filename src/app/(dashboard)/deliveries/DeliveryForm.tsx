@@ -5,6 +5,7 @@ import type { DeliveryFormState } from "./actions";
 import type { Distributor, Vehicle, Delivery } from "@/lib/types";
 import { todayIso, nowTimeValue, timeInputValue } from "@/lib/format";
 import DistributorCombobox from "@/components/DistributorCombobox";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function DeliveryForm({
   action,
@@ -246,6 +247,14 @@ export default function DeliveryForm({
         >
           ✓ Delivery saved successfully. Ready for the next entry.
         </p>
+      )}
+
+      {/* Stays visible (unlike the banner) until the next save, so there's
+          time to actually send the message. */}
+      {!delivery && !state?.error && state?.whatsapp && (
+        <div className="sm:col-span-3">
+          <WhatsAppButton message={state.whatsapp} />
+        </div>
       )}
 
       <div className="sm:col-span-3">
