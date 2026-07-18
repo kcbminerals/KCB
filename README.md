@@ -35,6 +35,13 @@ The app needs a Google Cloud "service account" (a robot account only your app us
 
 The app creates all the tabs it needs (Users, Distributors, Vehicles, Deliveries, Payments) and the default login automatically the first time it runs — you don't need to set up the sheet's columns yourself.
 
+## Your data can never be deleted by the app
+
+- **Deleting an entry in the app only hides it.** When someone deletes a delivery or payment, the row stays in your Google Sheet with a `1` in its `deleted` column — it just stops appearing in the app and its reports. To restore an entry, open the sheet and clear that `deleted` cell.
+- **The app never removes tabs, columns, or rows** — its sheet-setup code only ever *adds* missing tabs and columns.
+- **Google Sheets keeps full version history.** In the sheet, go to **File → Version history → See version history** to view or restore the entire sheet as it was at any earlier moment — your ultimate undo for accidental hand-edits.
+- **The file lives in your own Google Drive.** Even if the whole file is deleted from Drive, it sits in the Drive **Trash for 30 days** and can be restored from there. Avoid sharing the sheet with Editor access beyond the app's service account and people you trust.
+
 ## Getting started
 
 Install dependencies and run the dev server:

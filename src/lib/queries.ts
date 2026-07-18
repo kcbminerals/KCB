@@ -12,12 +12,13 @@ import type {
 } from "@/lib/types";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 
+// Note: deliberately no delete() here — rows are never removed from the
+// sheet, only flagged via the "deleted" column (soft delete).
 type SheetRow = {
   get(key: string): unknown;
   set(key: string, value: unknown): void;
   assign(obj: Record<string, unknown>): void;
   save(): Promise<void>;
-  delete(): Promise<unknown>;
 };
 
 function str(row: SheetRow, key: string): string | null {
@@ -296,7 +297,9 @@ export async function listDeliveries(filters?: {
   const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
 
   let deliveries = await Promise.all(
-    rows.map((row) => rowToDeliveryWithNames(row, distributorMap, vehicleMap))
+    rows
+      .filter((row) => num(row, "deleted") !== 1)
+      .map((row) => rowToDeliveryWithNames(row, distributorMap, vehicleMap))
   );
 
   if (filters?.from) deliveries = deliveries.filter((d) => d.date >= filters.from!);
@@ -320,7 +323,7 @@ export async function getDelivery(id: number): Promise<DeliveryWithNames | undef
     listDistributors(true),
     listVehicles(true),
   ]);
-  const row = rows.find((r) => num(r, "id") === id);
+  const row = rows.find((r) => num(r, "id") === id && num(r, "deleted") !== 1);
   if (!row) return undefined;
   const distributorMap = new Map(distributors.map((d) => [d.id, d]));
   const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
@@ -393,10 +396,14 @@ export async function updateDelivery(
 }
 
 export async function deleteDelivery(id: number): Promise<void> {
+  // Soft delete: the row is only flagged, never removed from the sheet,
+  // so no action in the app can permanently destroy a record.
   const sheet = await getWorksheet("Deliveries");
   const rows = await sheet.getRows();
   const row = rows.find((r) => num(r, "id") === id);
-  if (row) await row.delete();
+  if (!row) return;
+  row.set("deleted", 1);
+  await row.save();
 }
 
 // ---------- Payments ----------
@@ -428,7 +435,9 @@ export async function listPayments(filters?: {
   const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
   const distributorMap = new Map(distributors.map((d) => [d.id, d]));
 
-  let payments = rows.map((row) => rowToPaymentWithNames(row, distributorMap));
+  let payments = rows
+    .filter((row) => num(row, "deleted") !== 1)
+    .map((row) => rowToPaymentWithNames(row, distributorMap));
 
   if (filters?.from) payments = payments.filter((p) => p.date >= filters.from!);
   if (filters?.to) payments = payments.filter((p) => p.date <= filters.to!);
@@ -468,10 +477,14 @@ export async function createPayment(data: {
 }
 
 export async function deletePayment(id: number): Promise<void> {
+  // Soft delete: the row is only flagged, never removed from the sheet,
+  // so no action in the app can permanently destroy a record.
   const sheet = await getWorksheet("Payments");
   const rows = await sheet.getRows();
   const row = rows.find((r) => num(r, "id") === id);
-  if (row) await row.delete();
+  if (!row) return;
+  row.set("deleted", 1);
+  await row.save();
 }
 
 // ---------- Reports & Dashboard ----------
