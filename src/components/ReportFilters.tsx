@@ -49,7 +49,7 @@ export default function ReportFilters({
       </select>
       <button
         type="submit"
-        className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
+        className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
       >
         Search
       </button>

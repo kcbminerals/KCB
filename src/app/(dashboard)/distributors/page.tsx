@@ -23,7 +23,7 @@ export default async function DistributorsPage() {
         </div>
         <Link
           href="/vehicles"
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors text-sm font-medium text-slate-600 hover:bg-slate-50"
         >
           Manage vehicles
         </Link>
@@ -42,7 +42,7 @@ export default async function DistributorsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Name</th>
                 <th className="px-4 py-2 font-medium">Category</th>
                 <th className="px-4 py-2 font-medium">Vehicle</th>
@@ -63,7 +63,7 @@ export default async function DistributorsPage() {
                 </tr>
               )}
               {distributors.map((d) => (
-                <tr key={d.id} className="border-b border-slate-50 last:border-0">
+                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                   <td className="px-4 py-2 font-medium text-slate-900">
                     <Link href={`/distributors/${d.id}`} className="hover:underline">
                       {d.name}

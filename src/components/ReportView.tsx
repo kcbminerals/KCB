@@ -2,6 +2,7 @@ import type { Report } from "@/lib/queries";
 import { formatMoney } from "@/lib/format";
 import PrintButton from "./PrintButton";
 import ExportCsvButton from "./ExportCsvButton";
+import StatCard from "./StatCard";
 
 export default function ReportView({
   title,
@@ -55,24 +56,13 @@ export default function ReportView({
       {filters && <div>{filters}</div>}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Jars loaded</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {report.totals.jarsLoaded}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Total billed</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {formatMoney(report.totals.billed)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Total collected</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-700">
-            {formatMoney(report.totals.collected)}
-          </p>
-        </div>
+        <StatCard label="Jars loaded" value={String(report.totals.jarsLoaded)} />
+        <StatCard label="Total billed" value={formatMoney(report.totals.billed)} />
+        <StatCard
+          label="Total collected"
+          value={formatMoney(report.totals.collected)}
+          tone="good"
+        />
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -82,7 +72,7 @@ export default function ReportView({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium text-right">Jars loaded</th>
                 <th className="px-4 py-2 font-medium text-right">Billed</th>
@@ -99,7 +89,7 @@ export default function ReportView({
                 </tr>
               )}
               {report.byDistributor.map((r) => (
-                <tr key={r.distributor_id} className="border-b border-slate-50 last:border-0">
+                <tr key={r.distributor_id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                   <td className="px-4 py-2 font-medium text-slate-900">
                     {r.distributor_name}
                   </td>

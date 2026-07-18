@@ -35,7 +35,7 @@ export default function ExportCsvButton({
     <button
       type="button"
       onClick={handleClick}
-      className="no-print rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+      className="no-print rounded-lg border border-slate-300 px-3 py-1.5 transition-colors text-sm font-medium hover:bg-slate-50"
     >
       Export CSV
     </button>

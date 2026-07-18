@@ -78,7 +78,7 @@ export default async function ReportsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Category</th>
                 <th className="px-4 py-2 font-medium text-right">Jars out</th>
                 <th className="px-4 py-2 font-medium text-right">Total billed</th>
@@ -89,7 +89,7 @@ export default async function ReportsPage() {
             </thead>
             <tbody>
               {byCategory.map((c) => (
-                <tr key={c.category} className="border-b border-slate-50 last:border-0">
+                <tr key={c.category} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                   <td className="px-4 py-2 font-medium text-slate-900">{c.category}</td>
                   <td className="px-4 py-2 text-right">{c.jarBalance}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(c.totalBilled)}</td>
@@ -147,7 +147,7 @@ export default async function ReportsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Category</th>
                 <th className="px-4 py-2 font-medium text-right">Jars out</th>
@@ -165,7 +165,7 @@ export default async function ReportsPage() {
                 </tr>
               )}
               {distributors.map((d) => (
-                <tr key={d.id} className="border-b border-slate-50 last:border-0">
+                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                   <td className="px-4 py-2 font-medium text-slate-900">
                     <Link href={`/distributors/${d.id}`} className="hover:underline">
                       {d.name}

@@ -41,7 +41,7 @@ export default async function PaymentsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Method</th>
@@ -59,7 +59,7 @@ export default async function PaymentsPage() {
                 </tr>
               )}
               {payments.map((p) => (
-                <tr key={p.id} className="border-b border-slate-50 last:border-0">
+                <tr key={p.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                   <td className="px-4 py-2 whitespace-nowrap">
                     {formatDate(p.date)}
                     <div className="text-xs text-slate-400">

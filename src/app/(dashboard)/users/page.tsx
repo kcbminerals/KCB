@@ -26,7 +26,7 @@ export default async function UsersPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Username</th>
                 <th className="px-4 py-2 font-medium">Name</th>
                 <th className="px-4 py-2 font-medium">Role</th>
@@ -40,7 +40,7 @@ export default async function UsersPage() {
                 const isSelf = u.id === session.userId;
                 const toggle = setUserActiveAction.bind(null, u.id, !u.active);
                 return (
-                  <tr key={u.id} className="border-b border-slate-50 last:border-0">
+                  <tr key={u.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                     <td className="px-4 py-2 font-medium text-slate-900">
                       {u.username}
                       {isSelf && <span className="ml-2 text-xs text-slate-400">(you)</span>}

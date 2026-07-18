@@ -20,7 +20,7 @@ export default async function VehiclesPage() {
         </div>
         <Link
           href="/distributors"
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors text-sm font-medium text-slate-600 hover:bg-slate-50"
         >
           Back to distributors
         </Link>
@@ -34,7 +34,7 @@ export default async function VehiclesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Name</th>
                 <th className="px-4 py-2 font-medium">Plate number</th>
                 <th className="px-4 py-2 font-medium">Status</th>
@@ -52,7 +52,7 @@ export default async function VehiclesPage() {
               {vehicles.map((v) => {
                 const toggle = setVehicleActiveAction.bind(null, v.id, !v.active);
                 return (
-                  <tr key={v.id} className="border-b border-slate-50 last:border-0">
+                  <tr key={v.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                     <td className="px-4 py-2 font-medium text-slate-900">{v.name}</td>
                     <td className="px-4 py-2">{v.plate_number ?? "—"}</td>
                     <td className="px-4 py-2">

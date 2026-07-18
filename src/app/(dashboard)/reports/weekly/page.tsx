@@ -57,19 +57,19 @@ export default async function WeeklyReportPage({
         <div className="no-print flex items-center gap-2 text-sm">
           <Link
             href={`/reports/weekly?week=${prevWeek}${filterQuery}`}
-            className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             ← Previous
           </Link>
           <Link
             href={`/reports/weekly${filterQuery ? `?${filterQuery.slice(1)}` : ""}`}
-            className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             This week
           </Link>
           <Link
             href={`/reports/weekly?week=${nextWeek}${filterQuery}`}
-            className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             Next →
           </Link>

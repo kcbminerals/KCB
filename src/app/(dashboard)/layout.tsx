@@ -29,7 +29,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="no-print border-b border-slate-200 bg-white">
+      <header className="no-print sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 shadow-sm shadow-slate-900/[0.03] backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center justify-between">
             <Link href={session.role === "admin" ? "/" : "/deliveries"} className="flex items-center gap-2">
@@ -90,7 +90,7 @@ export default async function DashboardLayout({
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {children}
       </main>
-      <footer className="no-print border-t border-slate-200 bg-white px-4 py-3 text-center text-xs text-slate-400">
+      <footer className="no-print border-t border-slate-200/80 bg-white/60 px-4 py-3 text-center text-xs text-slate-400">
         KCB Minerals
       </footer>
     </div>

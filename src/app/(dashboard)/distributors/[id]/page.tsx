@@ -19,6 +19,7 @@ import {
 import { setDistributorActiveAction } from "../actions";
 import PrintButton from "@/components/PrintButton";
 import ExportCsvButton from "@/components/ExportCsvButton";
+import StatCard from "@/components/StatCard";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -144,14 +145,14 @@ export default async function DistributorDetailPage({
           <PrintButton />
           <Link
             href={`/distributors/${distributorId}/edit`}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors text-sm font-medium hover:bg-slate-50"
           >
             Edit
           </Link>
           <form action={toggleActive}>
             <button
               type="submit"
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors text-sm font-medium hover:bg-slate-50"
             >
               {distributor.active ? "Deactivate" : "Activate"}
             </button>
@@ -160,28 +161,17 @@ export default async function DistributorDetailPage({
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Price per jar</p>
-          <p className="mt-1 text-xl font-bold">{formatMoney(distributor.price_per_jar)}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Jars with distributor</p>
-          <p className="mt-1 text-xl font-bold">{distributor.jar_balance}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Total billed (all time)</p>
-          <p className="mt-1 text-xl font-bold">{formatMoney(distributor.total_billed)}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Outstanding due</p>
-          <p
-            className={`mt-1 text-xl font-bold ${
-              distributor.total_due > 0 ? "text-amber-700" : "text-emerald-700"
-            }`}
-          >
-            {formatMoney(distributor.total_due)}
-          </p>
-        </div>
+        <StatCard label="Price per jar" value={formatMoney(distributor.price_per_jar)} />
+        <StatCard label="Jars with distributor" value={String(distributor.jar_balance)} />
+        <StatCard
+          label="Total billed (all time)"
+          value={formatMoney(distributor.total_billed)}
+        />
+        <StatCard
+          label="Outstanding due"
+          value={formatMoney(distributor.total_due)}
+          tone={distributor.total_due > 0 ? "warning" : "good"}
+        />
       </div>
 
       <div className="no-print rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -213,7 +203,7 @@ export default async function DistributorDetailPage({
             </div>
             <button
               type="submit"
-              className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700"
+              className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
             >
               Apply
             </button>
@@ -221,25 +211,25 @@ export default async function DistributorDetailPage({
           <div className="flex flex-wrap gap-2 text-sm">
             <Link
               href={`${basePath}?from=${todayIso()}&to=${todayIso()}`}
-              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               Today
             </Link>
             <Link
               href={`${basePath}?from=${week.from}&to=${week.to}`}
-              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               This week
             </Link>
             <Link
               href={`${basePath}?from=${month.from}&to=${month.to}`}
-              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               This month
             </Link>
             <Link
               href={basePath}
-              className="rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               All time
             </Link>
@@ -248,30 +238,18 @@ export default async function DistributorDetailPage({
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Jars loaded ({periodLabel})</p>
-          <p className="mt-1 text-xl font-bold">{period.jarsLoaded}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Billed ({periodLabel})</p>
-          <p className="mt-1 text-xl font-bold">{formatMoney(period.billed)}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Collected ({periodLabel})</p>
-          <p className="mt-1 text-xl font-bold text-emerald-700">
-            {formatMoney(period.collected)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-500">Balance ({periodLabel})</p>
-          <p
-            className={`mt-1 text-xl font-bold ${
-              period.billed - period.collected > 0 ? "text-amber-700" : "text-emerald-700"
-            }`}
-          >
-            {formatMoney(period.billed - period.collected)}
-          </p>
-        </div>
+        <StatCard label={`Jars loaded (${periodLabel})`} value={String(period.jarsLoaded)} />
+        <StatCard label={`Billed (${periodLabel})`} value={formatMoney(period.billed)} />
+        <StatCard
+          label={`Collected (${periodLabel})`}
+          value={formatMoney(period.collected)}
+          tone="good"
+        />
+        <StatCard
+          label={`Balance (${periodLabel})`}
+          value={formatMoney(period.billed - period.collected)}
+          tone={period.billed - period.collected > 0 ? "warning" : "good"}
+        />
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -281,7 +259,7 @@ export default async function DistributorDetailPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Details</th>
                 <th className="px-4 py-2 font-medium text-right">Billed</th>
@@ -297,7 +275,7 @@ export default async function DistributorDetailPage({
                 </tr>
               )}
               {entries.map((e, i) => (
-                <tr key={i} className="border-b border-slate-50 last:border-0">
+                <tr key={i} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
                   <td className="px-4 py-2 whitespace-nowrap">
                     {formatDate(e.date)}
                     <div className="text-xs text-slate-400">{formatTime(e.created_at)}</div>

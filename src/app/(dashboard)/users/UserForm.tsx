@@ -71,7 +71,7 @@ export default function UserForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500 disabled:opacity-60"
         >
           {pending ? "Adding..." : "Add user"}
         </button>
