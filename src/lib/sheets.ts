@@ -23,6 +23,8 @@ const DISTRIBUTORS_HEADERS = [
   "vehicle_id",
   "active",
   "created_at",
+  "opening_balance",
+  "vehicle_ids",
 ];
 const VEHICLES_HEADERS = ["id", "name", "plate_number", "active", "created_at"];
 const DELIVERIES_HEADERS = [

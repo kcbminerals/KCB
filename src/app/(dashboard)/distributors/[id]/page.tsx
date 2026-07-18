@@ -91,6 +91,10 @@ export default async function DistributorDetailPage({
   const month = monthRange(currentYearMonth());
   const basePath = `/distributors/${distributorId}`;
 
+  // The carried-over previous balance belongs in the all-time view only —
+  // a date-filtered period shows just that period's activity.
+  const openingInLedger = !hasRange ? distributor.opening_balance : 0;
+
   const csvRows: (string | number)[][] = entries.map((e) => [
     formatDate(e.date),
     formatTime(e.created_at),
@@ -99,7 +103,10 @@ export default async function DistributorDetailPage({
     e.billed,
     e.paid,
   ]);
-  csvRows.push(["Total", "", "", "", period.billed, period.collected]);
+  if (openingInLedger !== 0) {
+    csvRows.push(["", "", "Previous balance", "Old dues from before this app", openingInLedger, 0]);
+  }
+  csvRows.push(["Total", "", "", "", period.billed + openingInLedger, period.collected]);
 
   const toggleActive = setDistributorActiveAction.bind(
     null,
@@ -121,15 +128,19 @@ export default async function DistributorDetailPage({
             {distributor.phone ?? "No phone"} · {distributor.address ?? "No address"}
           </p>
           <p className="text-sm text-slate-500">
-            Vehicle:{" "}
-            {distributor.vehicle_name
-              ? `${distributor.vehicle_name}${
-                  distributor.vehicle_plate_number
-                    ? ` (${distributor.vehicle_plate_number})`
-                    : ""
-                }`
+            Vehicles:{" "}
+            {distributor.vehicle_labels.length > 0
+              ? distributor.vehicle_labels.join(", ")
               : "— none —"}
           </p>
+          {distributor.opening_balance !== 0 && (
+            <p className="text-sm text-slate-500">
+              Previous balance (before this app):{" "}
+              <span className="font-medium text-slate-700">
+                {formatMoney(distributor.opening_balance)}
+              </span>
+            </p>
+          )}
           <p className="text-xs text-slate-400">
             Added {formatDateTime(distributor.created_at)}
           </p>
@@ -247,8 +258,8 @@ export default async function DistributorDetailPage({
         />
         <StatCard
           label={`Balance (${periodLabel})`}
-          value={formatMoney(period.billed - period.collected)}
-          tone={period.billed - period.collected > 0 ? "warning" : "good"}
+          value={formatMoney(period.billed + openingInLedger - period.collected)}
+          tone={period.billed + openingInLedger - period.collected > 0 ? "warning" : "good"}
         />
       </div>
 
@@ -301,12 +312,23 @@ export default async function DistributorDetailPage({
                 </tr>
               ))}
             </tbody>
-            {entries.length > 0 && (
+            {(entries.length > 0 || openingInLedger !== 0) && (
               <tfoot>
+                {openingInLedger !== 0 && (
+                  <tr className="border-t border-slate-200 text-slate-600">
+                    <td className="px-4 py-2" colSpan={2}>
+                      Previous balance (before this app)
+                    </td>
+                    <td className="px-4 py-2 text-right">{formatMoney(openingInLedger)}</td>
+                    <td className="px-4 py-2 text-right">—</td>
+                  </tr>
+                )}
                 <tr className="border-t border-slate-200 font-semibold text-slate-900">
                   <td className="px-4 py-2">Total</td>
                   <td className="px-4 py-2"></td>
-                  <td className="px-4 py-2 text-right">{formatMoney(period.billed)}</td>
+                  <td className="px-4 py-2 text-right">
+                    {formatMoney(period.billed + openingInLedger)}
+                  </td>
                   <td className="px-4 py-2 text-right">{formatMoney(period.collected)}</td>
                 </tr>
               </tfoot>

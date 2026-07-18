@@ -20,14 +20,17 @@ export type Distributor = {
   address: string | null;
   price_per_jar: number;
   category: DistributorCategory;
-  vehicle_id: number | null;
+  /** A distributor can be served by more than one vehicle. */
+  vehicle_ids: number[];
+  /** Dues carried over from before this app (can be negative for advance/credit). */
+  opening_balance: number;
   active: number;
   created_at: string;
 };
 
 export type DistributorWithVehicle = Distributor & {
-  vehicle_name: string | null;
-  vehicle_plate_number: string | null;
+  /** Display labels ("name (plate)") for each of the distributor's vehicles. */
+  vehicle_labels: string[];
 };
 
 export type Vehicle = {

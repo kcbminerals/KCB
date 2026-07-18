@@ -16,21 +16,28 @@ const distributorSchema = z.object({
   phone: z.string().trim().optional(),
   address: z.string().trim().optional(),
   pricePerJar: z.coerce.number().min(0, "Price must be 0 or more"),
+  // Previous/old balance can be negative when the distributor has paid in advance.
+  openingBalance: z.coerce.number(),
   category: z.enum(DISTRIBUTOR_CATEGORIES),
-  vehicleId: z.coerce.number().int().positive().optional(),
+  vehicleIds: z.array(z.number().int().positive()),
 });
 
 export type DistributorFormState = { error?: string } | undefined;
 
 function parseDistributor(formData: FormData) {
-  const vehicleRaw = formData.get("vehicleId");
+  const vehicleIdsRaw = String(formData.get("vehicleIds") ?? "");
+  const vehicleIds = vehicleIdsRaw
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n) && n > 0);
   return distributorSchema.safeParse({
     name: formData.get("name"),
     phone: formData.get("phone"),
     address: formData.get("address"),
     pricePerJar: formData.get("pricePerJar"),
+    openingBalance: formData.get("openingBalance") || 0,
     category: formData.get("category"),
-    vehicleId: vehicleRaw ? vehicleRaw : undefined,
+    vehicleIds,
   });
 }
 

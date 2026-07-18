@@ -45,7 +45,7 @@ export default async function DistributorsPage() {
               <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                 <th className="px-4 py-2 font-medium">Name</th>
                 <th className="px-4 py-2 font-medium">Category</th>
-                <th className="px-4 py-2 font-medium">Vehicle</th>
+                <th className="px-4 py-2 font-medium">Vehicles</th>
                 <th className="px-4 py-2 font-medium">Phone</th>
                 <th className="px-4 py-2 font-medium text-right">Price/jar</th>
                 <th className="px-4 py-2 font-medium text-right">Jars out</th>
@@ -75,9 +75,7 @@ export default async function DistributorsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-2">
-                    {d.vehicle_name
-                      ? `${d.vehicle_name}${d.vehicle_plate_number ? ` (${d.vehicle_plate_number})` : ""}`
-                      : "—"}
+                    {d.vehicle_labels.length > 0 ? d.vehicle_labels.join(", ") : "—"}
                   </td>
                   <td className="px-4 py-2">{d.phone ?? "—"}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(d.price_per_jar)}</td>
