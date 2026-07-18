@@ -37,6 +37,7 @@ const DELIVERIES_HEADERS = [
   "paid_amount",
   "notes",
   "created_at",
+  "deleted",
 ];
 const PAYMENTS_HEADERS = [
   "id",
@@ -46,6 +47,7 @@ const PAYMENTS_HEADERS = [
   "method",
   "notes",
   "created_at",
+  "deleted",
 ];
 
 export const SHEET_SCHEMAS = {
