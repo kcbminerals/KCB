@@ -42,6 +42,7 @@ The app creates all the tabs it needs (Users, Distributors, Vehicles, Deliveries
 - **Deleting an entry in the app only hides it.** When someone deletes a delivery or payment, the row stays in your Google Sheet with a `1` in its `deleted` column — it just stops appearing in the app and its reports. To restore an entry, open the sheet and clear that `deleted` cell.
 - **The app never removes tabs, columns, or rows** — its sheet-setup code only ever *adds* missing tabs and columns.
 - **Google Sheets keeps full version history.** In the sheet, go to **File → Version history → See version history** to view or restore the entire sheet as it was at any earlier moment — your ultimate undo for accidental hand-edits.
+- **The app locks its tabs inside Google Sheets.** On startup the app protects every tab it manages (Users, Distributors, Vehicles, Deliveries, Payments) so that **only the app's service account can edit them directly**. Anyone else you share the sheet with can view but not change the data — Google blocks their edits. As the **owner** of the file you always keep full edit access (useful for restoring a soft-deleted row by clearing its `deleted` cell); Google never locks the owner out.
 - **The file lives in your own Google Drive.** Even if the whole file is deleted from Drive, it sits in the Drive **Trash for 30 days** and can be restored from there. Avoid sharing the sheet with Editor access beyond the app's service account and people you trust.
 
 ## Getting started
