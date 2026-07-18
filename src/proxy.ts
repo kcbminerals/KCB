@@ -9,6 +9,13 @@ const STAFF_HOME = "/deliveries";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Backup routes do their own auth (cron secret or admin session) — the
+  // login redirect here would break the Vercel cron and file downloads.
+  if (pathname.startsWith("/api/backup")) {
+    return NextResponse.next();
+  }
+
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   const cookie = request.cookies.get(COOKIE_NAME)?.value;

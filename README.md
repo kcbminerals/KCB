@@ -44,6 +44,19 @@ The app creates all the tabs it needs (Users, Distributors, Vehicles, Deliveries
 - **Google Sheets keeps full version history.** In the sheet, go to **File → Version history → See version history** to view or restore the entire sheet as it was at any earlier moment — your ultimate undo for accidental hand-edits.
 - **The app locks its tabs inside Google Sheets.** On startup the app protects every tab it manages (Users, Distributors, Vehicles, Deliveries, Payments) so that **only the app's service account can edit them directly**. Anyone else you share the sheet with can view but not change the data — Google blocks their edits. As the **owner** of the file you always keep full edit access (useful for restoring a soft-deleted row by clearing its `deleted` cell); Google never locks the owner out.
 - **The file lives in your own Google Drive.** Even if the whole file is deleted from Drive, it sits in the Drive **Trash for 30 days** and can be restored from there. Avoid sharing the sheet with Editor access beyond the app's service account and people you trust.
+- **A second copy lives outside Google.** See **Backups** below — a daily snapshot goes to Vercel Blob storage, and admins can download a backup file anytime from the dashboard.
+
+## Backups (a copy of your data outside Google)
+
+Two independent backup paths, both containing every table (login password hashes are excluded on purpose):
+
+- **Manual, no setup needed:** on the admin dashboard, **Quick actions → Download backup** saves a complete JSON snapshot to your phone/computer. Do this weekly and you always hold your own offline copy.
+- **Automatic daily snapshot to Vercel** (one-time setup, free tier):
+  1. In the [Vercel dashboard](https://vercel.com/dashboard), open the project → **Storage** tab → **Create Database → Blob** → connect it to this project (this auto-adds the `BLOB_READ_WRITE_TOKEN` environment variable).
+  2. In **Settings → Environment Variables**, add `CRON_SECRET` = any long random string.
+  3. Redeploy. Every night (~3:00 AM IST) the app stores a full snapshot in Blob storage under `backups/`, keeping the most recent 60. You can browse and download them in the Vercel dashboard's Storage tab.
+
+To restore from a backup file, the data can be re-entered or re-imported into a fresh Google Sheet — the snapshot has one JSON section per tab with the exact column names.
 
 ## Getting started
 
