@@ -120,6 +120,39 @@ async function ensureSheet(
   return sheet;
 }
 
+// Marker so protection is only ever added once per tab.
+const PROTECTION_DESCRIPTION =
+  "Locked by the KCB Minerals app — data is managed through the app. " +
+  "The sheet owner can still edit (e.g. to restore a soft-deleted row).";
+
+/** Locks every app tab inside Google Sheets so that only the app's service
+ *  account can edit it directly. Anyone else the sheet is shared with gets
+ *  view-only behaviour on these tabs; the sheet OWNER always keeps full
+ *  edit access (Google never locks out the owner). Best-effort: the app
+ *  still works if protection can't be applied. */
+async function protectSheets(doc: GoogleSpreadsheet): Promise<void> {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  if (!email) return;
+  for (const title of Object.keys(SHEET_SCHEMAS) as SheetName[]) {
+    const sheet = doc.sheetsByTitle[title];
+    if (!sheet) continue;
+    const alreadyProtected = (sheet.protectedRanges ?? []).some(
+      (p) => p.description === PROTECTION_DESCRIPTION
+    );
+    if (alreadyProtected) continue;
+    try {
+      await sheet.addProtectedRange({
+        range: { sheetId: sheet.sheetId },
+        description: PROTECTION_DESCRIPTION,
+        warningOnly: false,
+        editors: { users: [email] },
+      });
+    } catch (err) {
+      console.warn(`[kcb] Could not protect sheet "${title}":`, err);
+    }
+  }
+}
+
 async function migrate(): Promise<void> {
   const doc = getDoc();
   await doc.loadInfo();
@@ -127,6 +160,8 @@ async function migrate(): Promise<void> {
   for (const title of Object.keys(SHEET_SCHEMAS) as SheetName[]) {
     await ensureSheet(doc, title);
   }
+
+  await protectSheets(doc);
 
   const usersSheet = doc.sheetsByTitle["Users"];
   const userRows = await usersSheet.getRows();
