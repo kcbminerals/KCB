@@ -5,6 +5,7 @@ import { createPaymentAction } from "./actions";
 import type { Distributor } from "@/lib/types";
 import { todayIso, nowTimeValue } from "@/lib/format";
 import DistributorCombobox from "@/components/DistributorCombobox";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function PaymentForm({
   distributors,
@@ -132,6 +133,14 @@ export default function PaymentForm({
         >
           ✓ Payment saved successfully. Ready for the next entry.
         </p>
+      )}
+
+      {/* Stays visible (unlike the banner) until the next save, so there's
+          time to actually send the message. */}
+      {!state?.error && state?.whatsapp && (
+        <div className="sm:col-span-3">
+          <WhatsAppButton message={state.whatsapp} />
+        </div>
       )}
       <div className="sm:col-span-3">
         <button

@@ -4,7 +4,14 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth";
-import { createDelivery, updateDelivery, deleteDelivery } from "@/lib/queries";
+import {
+  createDelivery,
+  updateDelivery,
+  deleteDelivery,
+  getDistributorSummary,
+} from "@/lib/queries";
+import { formatDate, formatMoney } from "@/lib/format";
+import { normalizeIndianPhone, type WhatsAppMessage } from "@/lib/whatsapp";
 
 const deliverySchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -21,7 +28,9 @@ const deliverySchema = z.object({
   notes: z.string().trim().optional(),
 });
 
-export type DeliveryFormState = { error?: string; savedAt?: number } | undefined;
+export type DeliveryFormState =
+  | { error?: string; savedAt?: number; whatsapp?: WhatsAppMessage }
+  | undefined;
 
 function parseDelivery(formData: FormData) {
   const vehicleRaw = formData.get("vehicleId");
@@ -62,7 +71,28 @@ export async function createDeliveryAction(
   revalidatePath("/deliveries");
   revalidatePath("/");
   revalidatePath("/distributors");
-  return { savedAt: Date.now() };
+
+  // Prepare a ready-to-send WhatsApp message for the distributor. The
+  // summary is re-read after the save so the balance includes this entry.
+  let whatsapp: WhatsAppMessage | undefined;
+  const summary = await getDistributorSummary(parsed.data.distributorId).catch(
+    () => undefined
+  );
+  if (summary) {
+    const { jarsLoaded, pricePerJar, paidAmount, date } = parsed.data;
+    whatsapp = {
+      phone: normalizeIndianPhone(summary.phone),
+      text: [
+        `KCB Minerals — delivery on ${formatDate(date)}`,
+        `Jars delivered: ${jarsLoaded} @ ${formatMoney(pricePerJar)}`,
+        `Bill: ${formatMoney(jarsLoaded * pricePerJar)}`,
+        `Paid: ${formatMoney(paidAmount)}`,
+        `Total balance due: ${formatMoney(summary.total_due)}`,
+        `Thank you!`,
+      ].join("\n"),
+    };
+  }
+  return { savedAt: Date.now(), whatsapp };
 }
 
 export async function updateDeliveryAction(

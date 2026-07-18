@@ -4,6 +4,7 @@ A small web app for running KCB Minerals' water jar delivery business:
 
 - Record jars loaded to a vehicle for a distributor and the payment received in one entry — with an editable date and time, so older entries can be backfilled.
 - Record standalone payments against a distributor's outstanding dues.
+- After saving a delivery or payment, a **Send on WhatsApp** button opens WhatsApp with a ready-made receipt (jars, bill, paid, remaining balance) addressed to that distributor's phone number — one tap to notify them.
 - Track each distributor's running jar balance and outstanding due (ledger view), including which KCB1/KCB2/Enrich category and vehicle(s) they belong to — a distributor can be served by more than one vehicle.
 - When adding a distributor you can enter their **previous balance** (old dues from before this app); it is counted into their outstanding due and shown separately on their report.
 - Daily, weekly and monthly reports, searchable/filterable by distributor and by category, printable to PDF, exportable to CSV.
