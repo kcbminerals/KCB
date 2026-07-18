@@ -2,7 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { verifySession } from "@/lib/auth";
 import NavLink from "@/components/NavLink";
+import AutoRefresh from "@/components/AutoRefresh";
 import { logoutAction } from "./actions";
+
+// Never serve cached pages — every view reads live data from the Google
+// Sheet. (Pages are already dynamic via the session cookie; this makes the
+// guarantee explicit.)
+export const dynamic = "force-dynamic";
 
 const ADMIN_NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
@@ -29,6 +35,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
+      <AutoRefresh />
       <header className="no-print sticky top-0 z-40 bg-gradient-to-r from-sky-700 via-sky-600 to-sky-500 shadow-lg shadow-sky-900/20">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center justify-between">
