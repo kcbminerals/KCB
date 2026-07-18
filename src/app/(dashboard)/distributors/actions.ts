@@ -8,6 +8,8 @@ import {
   createDistributor,
   updateDistributor,
   setDistributorActive,
+  createVehicle,
+  listVehicles,
 } from "@/lib/queries";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 
@@ -41,6 +43,28 @@ function parseDistributor(formData: FormData) {
   });
 }
 
+/** Creates the vehicle numbers typed straight into the distributor form
+ *  (comma-separated), reusing an existing vehicle when the name or plate
+ *  already matches, and returns their ids. */
+async function resolveNewVehicles(formData: FormData): Promise<number[]> {
+  const names = String(formData.get("newVehicleNames") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (names.length === 0) return [];
+  const existing = await listVehicles(true);
+  const ids: number[] = [];
+  for (const name of names) {
+    const match = existing.find(
+      (v) =>
+        v.name.toLowerCase() === name.toLowerCase() ||
+        (v.plate_number ?? "").toLowerCase() === name.toLowerCase()
+    );
+    ids.push(match ? match.id : await createVehicle({ name }));
+  }
+  return ids;
+}
+
 export async function createDistributorAction(
   _prevState: DistributorFormState,
   formData: FormData
@@ -52,7 +76,11 @@ export async function createDistributorAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  await createDistributor(parsed.data);
+  const newVehicleIds = await resolveNewVehicles(formData);
+  await createDistributor({
+    ...parsed.data,
+    vehicleIds: [...new Set([...parsed.data.vehicleIds, ...newVehicleIds])],
+  });
   revalidatePath("/distributors");
   revalidatePath("/deliveries");
   revalidatePath("/payments");
@@ -69,7 +97,11 @@ export async function updateDistributorAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  await updateDistributor(id, parsed.data);
+  const newVehicleIds = await resolveNewVehicles(formData);
+  await updateDistributor(id, {
+    ...parsed.data,
+    vehicleIds: [...new Set([...parsed.data.vehicleIds, ...newVehicleIds])],
+  });
   revalidatePath("/distributors");
   revalidatePath(`/distributors/${id}`);
   redirect(`/distributors/${id}`);
