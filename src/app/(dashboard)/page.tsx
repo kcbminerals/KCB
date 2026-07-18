@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
         <p className="text-sm text-slate-500">Today, {formatDate(today)}</p>
       </div>
 
@@ -38,13 +38,13 @@ export default async function DashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/deliveries"
-              className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
+              className="rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500"
             >
               + New delivery / jars loaded
             </Link>
             <Link
               href="/payments"
-              className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
+              className="rounded-lg bg-gradient-to-b from-emerald-500 to-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-emerald-500"
             >
               + Record payment
             </Link>

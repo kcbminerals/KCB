@@ -81,7 +81,7 @@ export default function DeliveryForm({
             type="date"
             required
             defaultValue={delivery?.date ?? todayIso()}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -96,7 +96,7 @@ export default function DeliveryForm({
             suppressHydrationWarning
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           />
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function DeliveryForm({
           name="vehicleId"
           value={vehicleId}
           onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")}
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         >
           <option value="">— none —</option>
           {vehicles.map((v) => (
@@ -152,7 +152,7 @@ export default function DeliveryForm({
           required
           value={jarsLoaded}
           onChange={(e) => setJarsLoaded(Number(e.target.value) || 0)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
 
@@ -176,7 +176,7 @@ export default function DeliveryForm({
           required
           value={pricePerJar}
           onChange={(e) => setPricePerJar(Number(e.target.value) || 0)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
 
@@ -194,7 +194,7 @@ export default function DeliveryForm({
             required
             value={paidAmount}
             onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           />
           <button
             type="button"
@@ -225,7 +225,7 @@ export default function DeliveryForm({
           id="notes"
           name="notes"
           defaultValue={delivery?.notes ?? ""}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
 
@@ -248,7 +248,7 @@ export default function DeliveryForm({
         <button
           type="submit"
           disabled={pending || distributors.length === 0}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500 disabled:opacity-60"
+          className="w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 sm:w-auto sm:px-6 disabled:opacity-60"
         >
           {pending ? "Saving..." : submitLabel}
         </button>

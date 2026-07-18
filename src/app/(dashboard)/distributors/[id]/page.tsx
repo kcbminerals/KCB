@@ -112,7 +112,7 @@ export default async function DistributorDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">{distributor.name}</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{distributor.name}</h1>
             <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
               {distributor.category}
             </span>
@@ -203,7 +203,7 @@ export default async function DistributorDetailPage({
             </div>
             <button
               type="submit"
-              className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
+              className="rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 px-3 py-1.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500"
             >
               Apply
             </button>

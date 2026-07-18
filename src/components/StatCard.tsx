@@ -1,3 +1,9 @@
+const GRADIENTS = {
+  default: "from-sky-500 to-sky-700 shadow-sky-500/25",
+  good: "from-emerald-500 to-emerald-700 shadow-emerald-500/25",
+  warning: "from-amber-500 to-orange-600 shadow-amber-500/25",
+} as const;
+
 export default function StatCard({
   label,
   value,
@@ -7,20 +13,14 @@ export default function StatCard({
   value: string;
   tone?: "default" | "warning" | "good";
 }) {
-  const toneClasses =
-    tone === "warning"
-      ? "text-amber-700"
-      : tone === "good"
-        ? "text-emerald-700"
-        : "text-slate-900";
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+    <div
+      className={`rounded-2xl bg-gradient-to-br ${GRADIENTS[tone]} p-4 text-white shadow-lg`}
+    >
+      <p className="text-xs font-semibold uppercase tracking-wider text-white/75">
         {label}
       </p>
-      <p className={`mt-1.5 text-2xl font-bold tracking-tight ${toneClasses}`}>
-        {value}
-      </p>
+      <p className="mt-1.5 text-2xl font-extrabold tracking-tight">{value}</p>
     </div>
   );
 }

@@ -46,7 +46,7 @@ export default function PaymentForm({
             type="date"
             required
             defaultValue={todayIso()}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -61,7 +61,7 @@ export default function PaymentForm({
             suppressHydrationWarning
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           />
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function PaymentForm({
           step="0.01"
           min="0.01"
           required
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -100,7 +100,7 @@ export default function PaymentForm({
           id="method"
           name="method"
           defaultValue="Cash"
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         >
           <option>Cash</option>
           <option>UPI</option>
@@ -117,7 +117,7 @@ export default function PaymentForm({
           id="notes"
           name="notes"
           placeholder="optional"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       {state?.error && (
@@ -137,7 +137,7 @@ export default function PaymentForm({
         <button
           type="submit"
           disabled={pending || distributors.length === 0}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:opacity-60"
+          className="w-full rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-emerald-500 sm:w-auto sm:px-6 disabled:opacity-60"
         >
           {pending ? "Saving..." : "Record payment"}
         </button>

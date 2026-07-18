@@ -14,14 +14,14 @@ export default async function PaymentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Payments</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Payments</h1>
         <p className="text-sm text-slate-500">
           Record a payment received from a distributor towards their outstanding
           dues (not tied to a specific delivery).
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-slate-200 border-t-4 border-t-emerald-500 bg-white p-4 shadow-sm">
         {distributors.length === 0 ? (
           <p className="text-sm text-slate-500">
             <Link href="/distributors/new" className="text-sky-600 hover:underline">

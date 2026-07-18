@@ -11,7 +11,7 @@ export default async function UsersPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Users</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Users</h1>
         <p className="text-sm text-slate-500">
           Admins have full access. Staff can only record deliveries and payments —
           no reports, distributors, vehicles, or editing past entries.

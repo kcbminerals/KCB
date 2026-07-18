@@ -16,7 +16,7 @@ export default async function DistributorsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Distributors</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Distributors</h1>
           <p className="text-sm text-slate-500">
             Manage distributors and see their jar &amp; payment balances.
           </p>

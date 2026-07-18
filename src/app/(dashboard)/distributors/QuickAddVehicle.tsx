@@ -58,7 +58,7 @@ export default function QuickAddVehicle({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-sky-500 disabled:opacity-60"
+          className="rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 disabled:opacity-60"
         >
           {pending ? "Adding..." : "Add vehicle"}
         </button>

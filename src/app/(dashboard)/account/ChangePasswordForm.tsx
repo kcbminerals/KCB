@@ -30,7 +30,7 @@ export default function ChangePasswordForm() {
           name="currentPassword"
           type="password"
           required
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -46,7 +46,7 @@ export default function ChangePasswordForm() {
           type="password"
           minLength={6}
           required
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -62,7 +62,7 @@ export default function ChangePasswordForm() {
           type="password"
           minLength={6}
           required
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       {state?.error && (
@@ -78,7 +78,7 @@ export default function ChangePasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500 disabled:opacity-60"
+        className="w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 sm:w-auto sm:px-6 disabled:opacity-60"
       >
         {pending ? "Saving..." : "Change password"}
       </button>

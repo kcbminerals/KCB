@@ -29,30 +29,33 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="no-print sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 shadow-sm shadow-slate-900/[0.03] backdrop-blur">
+      <header className="no-print sticky top-0 z-40 bg-gradient-to-r from-sky-700 via-sky-600 to-sky-500 shadow-lg shadow-sky-900/20">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center justify-between">
-            <Link href={session.role === "admin" ? "/" : "/deliveries"} className="flex items-center gap-2">
+            <Link
+              href={session.role === "admin" ? "/" : "/deliveries"}
+              className="rounded-xl bg-white px-2.5 py-1.5 shadow-md"
+            >
               <Image
                 src="/logo.png"
                 alt="KCB Minerals"
                 width={188}
                 height={103}
-                className="h-9 w-auto"
+                className="h-8 w-auto"
                 priority
               />
             </Link>
             <div className="flex items-center gap-1 sm:hidden">
               <Link
                 href="/account"
-                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="rounded-full px-3 py-1.5 text-sm font-medium text-sky-100 transition-colors hover:bg-white/15 hover:text-white"
               >
                 Account
               </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  className="rounded-full px-3 py-1.5 text-sm font-medium text-sky-100 transition-colors hover:bg-white/15 hover:text-white"
                 >
                   Sign out
                 </button>
@@ -69,17 +72,17 @@ export default async function DashboardLayout({
           <div className="hidden items-center gap-3 sm:flex">
             <Link
               href="/account"
-              className="text-sm text-slate-500 hover:text-slate-700 hover:underline"
+              className="text-sm font-medium text-sky-50 hover:text-white hover:underline"
             >
               {session.name}
-              <span className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">
+              <span className="ml-1.5 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">
                 {session.role === "admin" ? "Admin" : "Staff"}
               </span>
             </Link>
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="rounded-full px-3 py-1.5 text-sm font-medium text-sky-100 transition-colors hover:bg-white/15 hover:text-white"
               >
                 Sign out
               </button>

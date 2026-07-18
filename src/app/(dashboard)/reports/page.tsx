@@ -24,7 +24,7 @@ export default async function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Reports</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Reports</h1>
         <p className="text-sm text-slate-500">
           Daily, weekly and monthly summaries, plus all-time overviews by distributor and category.
         </p>
@@ -33,7 +33,7 @@ export default async function ReportsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href="/reports/daily"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-sky-300 hover:shadow-md"
+          className="rounded-xl border border-slate-200 border-t-4 border-t-sky-500 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="font-semibold text-slate-900">Daily sales</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -42,7 +42,7 @@ export default async function ReportsPage() {
         </Link>
         <Link
           href="/reports/weekly"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-sky-300 hover:shadow-md"
+          className="rounded-xl border border-slate-200 border-t-4 border-t-emerald-500 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="font-semibold text-slate-900">Weekly report</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -51,7 +51,7 @@ export default async function ReportsPage() {
         </Link>
         <Link
           href="/reports/monthly"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-sky-300 hover:shadow-md"
+          className="rounded-xl border border-slate-200 border-t-4 border-t-amber-500 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="font-semibold text-slate-900">Monthly report</h2>
           <p className="mt-1 text-sm text-slate-500">

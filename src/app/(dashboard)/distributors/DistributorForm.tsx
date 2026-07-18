@@ -34,7 +34,7 @@ export default function DistributorForm({
           name="name"
           required
           defaultValue={distributor?.name}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -45,7 +45,7 @@ export default function DistributorForm({
           id="phone"
           name="phone"
           defaultValue={distributor?.phone ?? ""}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       <div className="flex flex-col gap-1 sm:col-span-2">
@@ -56,7 +56,7 @@ export default function DistributorForm({
           id="address"
           name="address"
           defaultValue={distributor?.address ?? ""}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -71,7 +71,7 @@ export default function DistributorForm({
           min="0"
           required
           defaultValue={distributor?.price_per_jar ?? ""}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -83,7 +83,7 @@ export default function DistributorForm({
           name="category"
           required
           defaultValue={distributor?.category ?? DISTRIBUTOR_CATEGORIES[0]}
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         >
           {DISTRIBUTOR_CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -101,7 +101,7 @@ export default function DistributorForm({
           name="vehicleId"
           value={vehicleId}
           onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")}
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         >
           <option value="">— none —</option>
           {vehicles.map((v) => (
@@ -122,7 +122,7 @@ export default function DistributorForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500 disabled:opacity-60"
+          className="w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 sm:w-auto sm:px-6 disabled:opacity-60"
         >
           {pending ? "Saving..." : submitLabel}
         </button>

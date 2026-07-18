@@ -21,7 +21,7 @@ export default async function EditDeliveryPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Edit delivery</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Edit delivery</h1>
       </div>
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <DeliveryForm

@@ -12,7 +12,7 @@ export default async function VehiclesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Vehicles</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Vehicles</h1>
           <p className="text-sm text-slate-500">
             Vehicles used to deliver jars to distributors. You can also add a
             vehicle inline while adding or editing a distributor.
