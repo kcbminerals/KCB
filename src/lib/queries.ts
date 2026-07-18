@@ -41,6 +41,21 @@ function numOrNull(row: SheetRow, key: string): number | null {
 
 // ---------- Distributors ----------
 
+function parseVehicleIds(row: SheetRow): number[] {
+  // Newer rows store a comma-separated list in "vehicle_ids"; rows created
+  // before multi-vehicle support only have the single legacy "vehicle_id".
+  const csv = str(row, "vehicle_ids");
+  if (csv) {
+    const ids = csv
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (ids.length > 0) return [...new Set(ids)];
+  }
+  const legacy = numOrNull(row, "vehicle_id");
+  return legacy ? [legacy] : [];
+}
+
 function rowToDistributor(row: SheetRow): Distributor {
   const category = str(row, "category");
   return {
@@ -52,7 +67,8 @@ function rowToDistributor(row: SheetRow): Distributor {
     category: (DISTRIBUTOR_CATEGORIES as readonly string[]).includes(category ?? "")
       ? (category as DistributorCategory)
       : "KCB1",
-    vehicle_id: numOrNull(row, "vehicle_id"),
+    vehicle_ids: parseVehicleIds(row),
+    opening_balance: num(row, "opening_balance"),
     active: num(row, "active"),
     created_at: str(row, "created_at") ?? "",
   };
@@ -76,14 +92,13 @@ export async function listDistributorsWithVehicle(
     listVehicles(true),
   ]);
   const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
-  return distributors.map((d) => {
-    const vehicle = d.vehicle_id ? vehicleMap.get(d.vehicle_id) : undefined;
-    return {
-      ...d,
-      vehicle_name: vehicle?.name ?? null,
-      vehicle_plate_number: vehicle?.plate_number ?? null,
-    };
-  });
+  return distributors.map((d) => ({
+    ...d,
+    vehicle_labels: d.vehicle_ids
+      .map((id) => vehicleMap.get(id))
+      .filter((v): v is Vehicle => Boolean(v))
+      .map((v) => `${v.name}${v.plate_number ? ` (${v.plate_number})` : ""}`),
+  }));
 }
 
 export async function getDistributor(id: number): Promise<Distributor | undefined> {
@@ -99,11 +114,13 @@ export async function createDistributor(data: {
   address?: string | null;
   pricePerJar: number;
   category: DistributorCategory;
-  vehicleId?: number | null;
+  vehicleIds?: number[];
+  openingBalance?: number;
 }): Promise<number> {
   const sheet = await getWorksheet("Distributors");
   const rows = await sheet.getRows();
   const id = nextId(rows);
+  const vehicleIds = data.vehicleIds ?? [];
   await sheet.addRow({
     id,
     name: data.name,
@@ -111,7 +128,11 @@ export async function createDistributor(data: {
     address: data.address ?? "",
     price_per_jar: data.pricePerJar,
     category: data.category,
-    vehicle_id: data.vehicleId ?? "",
+    // Legacy single-vehicle column kept in sync (first vehicle) so the
+    // sheet stays readable by hand.
+    vehicle_id: vehicleIds[0] ?? "",
+    vehicle_ids: vehicleIds.join(","),
+    opening_balance: data.openingBalance ?? 0,
     active: 1,
     created_at: nowIstTimestamp(),
   });
@@ -126,20 +147,24 @@ export async function updateDistributor(
     address?: string | null;
     pricePerJar: number;
     category: DistributorCategory;
-    vehicleId?: number | null;
+    vehicleIds?: number[];
+    openingBalance?: number;
   }
 ): Promise<void> {
   const sheet = await getWorksheet("Distributors");
   const rows = await sheet.getRows();
   const row = rows.find((r) => num(r, "id") === id);
   if (!row) return;
+  const vehicleIds = data.vehicleIds ?? [];
   row.assign({
     name: data.name,
     phone: data.phone ?? "",
     address: data.address ?? "",
     price_per_jar: data.pricePerJar,
     category: data.category,
-    vehicle_id: data.vehicleId ?? "",
+    vehicle_id: vehicleIds[0] ?? "",
+    vehicle_ids: vehicleIds.join(","),
+    opening_balance: data.openingBalance ?? 0,
   });
   await row.save();
 }
@@ -178,7 +203,9 @@ export async function listDistributorsSummary(
       jar_balance: jarsLoaded - jarsReturned,
       total_billed: totalBilled,
       total_paid: totalPaid,
-      total_due: totalBilled - totalPaid,
+      // The previous balance entered when the distributor was added counts
+      // toward what they still owe.
+      total_due: dist.opening_balance + totalBilled - totalPaid,
     };
   });
 }
@@ -490,7 +517,11 @@ export async function deletePayment(id: number): Promise<void> {
 // ---------- Reports & Dashboard ----------
 
 export async function getDashboardStats(todayIso: string) {
-  const [deliveries, payments] = await Promise.all([listDeliveries(), listPayments()]);
+  const [deliveries, payments, distributors] = await Promise.all([
+    listDeliveries(),
+    listPayments(),
+    listDistributors(true),
+  ]);
 
   const todayDeliveries = deliveries.filter((d) => d.date === todayIso);
   const todayPayments = payments.filter((p) => p.date === todayIso);
@@ -507,12 +538,13 @@ export async function getDashboardStats(todayIso: string) {
     payments.reduce((sum, p) => sum + p.amount, 0);
   const totalJarsLoaded = deliveries.reduce((sum, d) => sum + d.jars_loaded, 0);
   const totalJarsReturned = deliveries.reduce((sum, d) => sum + d.jars_returned, 0);
+  const totalOpeningBalance = distributors.reduce((sum, d) => sum + d.opening_balance, 0);
 
   return {
     todayJarsLoaded,
     todayJarsReturned,
     todayCollected,
-    totalOutstandingDue: totalBilled - totalPaid,
+    totalOutstandingDue: totalOpeningBalance + totalBilled - totalPaid,
     totalJarsOut: totalJarsLoaded - totalJarsReturned,
   };
 }

@@ -37,7 +37,9 @@ export default function DeliveryForm({
   );
   const [vehicleId, setVehicleId] = useState<number | "">(
     delivery?.vehicle_id ??
-      (initialDistributorId ? distributorById.get(initialDistributorId)?.vehicle_id : null) ??
+      (initialDistributorId
+        ? distributorById.get(initialDistributorId)?.vehicle_ids[0]
+        : null) ??
       ""
   );
   const [jarsLoaded, setJarsLoaded] = useState(delivery?.jars_loaded ?? 0);
@@ -115,7 +117,9 @@ export default function DeliveryForm({
           onSelect={(id) => {
             const dist = distributorById.get(id);
             setPricePerJar(dist?.price_per_jar ?? 0);
-            setVehicleId(dist?.vehicle_id ?? "");
+            // Pre-fill the distributor's usual (first) vehicle; if they use
+            // several, the driver can switch in the vehicle dropdown.
+            setVehicleId(dist?.vehicle_ids[0] ?? "");
           }}
         />
       </div>

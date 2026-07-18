@@ -6,7 +6,7 @@ import { createVehicleAction } from "../vehicles/actions";
 export default function QuickAddVehicle({
   onCreated,
 }: {
-  onCreated: (id: number) => void;
+  onCreated: (id: number, label: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(createVehicleAction, undefined);
@@ -16,8 +16,13 @@ export default function QuickAddVehicle({
   useEffect(() => {
     if (state?.createdId && state.createdId !== lastHandledId.current) {
       lastHandledId.current = state.createdId;
-      onCreated(state.createdId);
-      formRef.current?.reset();
+      const form = formRef.current;
+      const name =
+        (form?.elements.namedItem("name") as HTMLInputElement | null)?.value ?? "";
+      const plate =
+        (form?.elements.namedItem("plateNumber") as HTMLInputElement | null)?.value ?? "";
+      onCreated(state.createdId, `${name || "Vehicle"}${plate ? ` (${plate})` : ""}`);
+      form?.reset();
       setOpen(false);
     }
   }, [state, onCreated]);

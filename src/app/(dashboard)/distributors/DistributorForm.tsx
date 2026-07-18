@@ -21,10 +21,30 @@ export default function DistributorForm({
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
-  const [vehicleId, setVehicleId] = useState<number | "">(distributor?.vehicle_id ?? "");
+  const [vehicleIds, setVehicleIds] = useState<number[]>(distributor?.vehicle_ids ?? []);
+  // Vehicles created inline this session, so they show up even though the
+  // server-rendered `vehicles` list doesn't include them yet.
+  const [extraVehicles, setExtraVehicles] = useState<{ id: number; name: string }[]>([]);
+
+  const toggleVehicle = (id: number) => {
+    setVehicleIds((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
+    );
+  };
+
+  const allVehicles: { id: number; label: string }[] = [
+    ...vehicles.map((v) => ({
+      id: v.id,
+      label: `${v.name}${v.plate_number ? ` (${v.plate_number})` : ""}`,
+    })),
+    ...extraVehicles
+      .filter((ev) => !vehicles.some((v) => v.id === ev.id))
+      .map((ev) => ({ id: ev.id, label: ev.name })),
+  ];
 
   return (
     <form action={formAction} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <input type="hidden" name="vehicleIds" value={vehicleIds.join(",")} />
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-sm font-medium text-slate-700">
           Distributor name
@@ -75,6 +95,22 @@ export default function DistributorForm({
         />
       </div>
       <div className="flex flex-col gap-1">
+        <label htmlFor="openingBalance" className="text-sm font-medium text-slate-700">
+          Previous balance (₹)
+        </label>
+        <input
+          id="openingBalance"
+          name="openingBalance"
+          type="number"
+          step="0.01"
+          defaultValue={distributor?.opening_balance ?? 0}
+          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+        />
+        <p className="text-xs text-slate-400">
+          Old dues from before this app — added to their outstanding due.
+        </p>
+      </div>
+      <div className="flex flex-col gap-1">
         <label htmlFor="category" className="text-sm font-medium text-slate-700">
           Category
         </label>
@@ -93,25 +129,36 @@ export default function DistributorForm({
         </select>
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="vehicleId" className="text-sm font-medium text-slate-700">
-          Vehicle number
-        </label>
-        <select
-          id="vehicleId"
-          name="vehicleId"
-          value={vehicleId}
-          onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-        >
-          <option value="">— none —</option>
-          {vehicles.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-              {v.plate_number ? ` (${v.plate_number})` : ""}
-            </option>
+        <span className="text-sm font-medium text-slate-700">
+          Vehicles (select all that serve this distributor)
+        </span>
+        <div className="flex flex-col gap-1.5 rounded-lg border border-slate-300 px-3 py-2.5">
+          {allVehicles.length === 0 && (
+            <p className="text-xs text-slate-400">No vehicles yet — add one below.</p>
+          )}
+          {allVehicles.map((v) => (
+            <label
+              key={v.id}
+              className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+            >
+              <input
+                type="checkbox"
+                checked={vehicleIds.includes(v.id)}
+                onChange={() => toggleVehicle(v.id)}
+                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              />
+              {v.label}
+            </label>
           ))}
-        </select>
-        <QuickAddVehicle onCreated={(id) => setVehicleId(id)} />
+        </div>
+        <QuickAddVehicle
+          onCreated={(id, name) => {
+            setExtraVehicles((prev) =>
+              prev.some((v) => v.id === id) ? prev : [...prev, { id, name }]
+            );
+            setVehicleIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+          }}
+        />
       </div>
       {state?.error && (
         <p className="sm:col-span-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
