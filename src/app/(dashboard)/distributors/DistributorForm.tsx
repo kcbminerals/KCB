@@ -117,9 +117,14 @@ export default function DistributorForm({
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium text-slate-700">
           Vehicles (tick all that serve this distributor)
+          {vehicleIds.length > 0 && (
+            <span className="ml-1.5 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+              {vehicleIds.length} selected
+            </span>
+          )}
         </span>
         {vehicles.length > 0 && (
-          <div className="flex flex-col gap-1.5 rounded-lg border border-slate-300 px-3 py-2.5">
+          <div className="flex max-h-40 flex-col gap-1.5 overflow-y-auto rounded-lg border border-slate-300 px-3 py-2.5">
             {vehicles.map((v) => (
               <label
                 key={v.id}
