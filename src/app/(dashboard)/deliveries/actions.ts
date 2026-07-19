@@ -21,7 +21,10 @@ const deliverySchema = z.object({
     .optional(),
   distributorId: z.coerce.number().int().positive("Choose a distributor"),
   vehicleId: z.coerce.number().int().positive().optional(),
-  jarsLoaded: z.coerce.number().int().min(0, "Must be 0 or more"),
+  jarsLoaded: z.coerce
+    .number()
+    .int()
+    .min(1, "Jars loaded must be at least 1 — an entry with 0 jars is not saved"),
   jarsReturned: z.coerce.number().int().min(0, "Must be 0 or more"),
   pricePerJar: z.coerce.number().min(0, "Must be 0 or more"),
   paidAmount: z.coerce.number().min(0, "Must be 0 or more"),
