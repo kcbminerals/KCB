@@ -9,6 +9,11 @@ export default async function DashboardPage() {
   const today = todayIso();
   const stats = await getDashboardStats(today);
   const recentDeliveries = await listDeliveries({ limit: 8 });
+  // Direct link to the exact spreadsheet the app reads/writes, so there's
+  // never a doubt about which file in Drive is the live one.
+  const sheetUrl = process.env.GOOGLE_SHEET_ID
+    ? `https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEET_ID}/edit`
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,6 +65,16 @@ export default async function DashboardPage() {
             >
               Download backup
             </a>
+            {sheetUrl && (
+              <a
+                href={sheetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Open Google Sheet ↗
+              </a>
+            )}
           </div>
         </div>
       </div>
