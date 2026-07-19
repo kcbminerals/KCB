@@ -60,6 +60,35 @@ export function sortableTimestamp(iso: string): string {
   return iso;
 }
 
+/** Turns a stored date cell in any common form ("2026-07-19", "19/07/2026",
+ *  stray spaces) into a comparable number like 20260719; 0 if unreadable. */
+export function dateSortKey(raw: string): number {
+  const s = (raw ?? "").trim();
+  let m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3]);
+  m = s.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+  if (m) return Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]);
+  return 0;
+}
+
+/** Minutes-into-day from a stored timestamp in any common form: naive ISO
+ *  (padded or not), UTC/offset-marked (converted to IST), or "h:mm am/pm".
+ *  Tolerant on purpose — entry ordering must survive hand-edited cells. */
+export function timeSortKey(raw: string): number {
+  const s = (raw ?? "").trim();
+  if (!s) return 0;
+  const src = HAS_TZ_MARKER.test(s) ? sortableTimestamp(s) : s;
+  let m = src.match(/T(\d{1,2}):(\d{2})/);
+  if (!m) m = src.match(/(?:^|\s)(\d{1,2}):(\d{2})/);
+  if (!m) return 0;
+  let h = Number(m[1]);
+  const min = Number(m[2]);
+  const ampm = src.match(/\b(am|pm)\b/i)?.[1]?.toLowerCase();
+  if (ampm === "pm" && h < 12) h += 12;
+  if (ampm === "am" && h === 12) h = 0;
+  return h * 60 + min;
+}
+
 /** Current IST time as an HH:MM string suitable for a <input type="time"> value. */
 export function nowTimeValue(): string {
   return new Date().toLocaleString("sv-SE", { timeZone: IST }).slice(11, 16);

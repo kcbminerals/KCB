@@ -1,6 +1,6 @@
 import "server-only";
 import { getWorksheet, nextId } from "@/lib/sheets";
-import { nowIstTimestamp, sortableTimestamp } from "@/lib/format";
+import { nowIstTimestamp, dateSortKey, timeSortKey } from "@/lib/format";
 import type {
   Distributor,
   DistributorWithVehicle,
@@ -23,8 +23,11 @@ type SheetRow = {
 
 function str(row: SheetRow, key: string): string | null {
   const val = row.get(key);
-  if (val === undefined || val === null || val === "") return null;
-  return String(val);
+  if (val === undefined || val === null) return null;
+  // Trim: stray whitespace from hand-edited cells must never affect
+  // comparisons, filtering, or sorting.
+  const s = String(val).trim();
+  return s === "" ? null : s;
 }
 
 function num(row: SheetRow, key: string): number {
@@ -347,11 +350,12 @@ export async function listDeliveries(filters?: {
 
   // Newest first by the entry's own date and (editable) time — so a
   // backdated entry recorded late still lands in its true position.
+  // Numeric keys tolerate any date/time cell format, not just clean ISO.
   deliveries.sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-    const at = sortableTimestamp(a.created_at);
-    const bt = sortableTimestamp(b.created_at);
-    if (at !== bt) return at < bt ? 1 : -1;
+    const d = dateSortKey(b.date) - dateSortKey(a.date);
+    if (d !== 0) return d;
+    const t = timeSortKey(b.created_at) - timeSortKey(a.created_at);
+    if (t !== 0) return t;
     return b.id - a.id;
   });
 
@@ -401,6 +405,7 @@ export async function createDelivery(data: {
     notes: data.notes ?? "",
     created_at: data.createdAt ?? nowIstTimestamp(),
   });
+  await sortSheetByDate("Deliveries");
   return id;
 }
 
@@ -436,6 +441,7 @@ export async function updateDelivery(
     ...(data.createdAt ? { created_at: data.createdAt } : {}),
   });
   await row.save();
+  await sortSheetByDate("Deliveries");
 }
 
 /** Soft delete: the row is only flagged, never removed from the sheet, so
@@ -461,6 +467,90 @@ async function softDeleteRow(
 
 export async function deleteDelivery(id: number): Promise<void> {
   await softDeleteRow("Deliveries", id);
+}
+
+/** Clears the deleted flag so the entry counts again everywhere. */
+async function restoreRow(
+  sheetName: "Deliveries" | "Payments",
+  id: number
+): Promise<void> {
+  const sheet = await getWorksheet(sheetName);
+  const rows = await sheet.getRows();
+  const row = rows.find((r) => num(r, "id") === id);
+  if (!row) return;
+  row.set("deleted", "");
+  await row.save();
+}
+
+export async function restoreDelivery(id: number): Promise<void> {
+  await restoreRow("Deliveries", id);
+}
+
+export async function restorePayment(id: number): Promise<void> {
+  await restoreRow("Payments", id);
+}
+
+/** Soft-deleted deliveries, newest first — for the Deleted entries page. */
+export async function listDeletedDeliveries(): Promise<DeliveryWithNames[]> {
+  const sheet = await getWorksheet("Deliveries");
+  const [rows, distributors, vehicles] = await Promise.all([
+    sheet.getRows(),
+    listDistributors(true),
+    listVehicles(true),
+  ]);
+  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
+  const deliveries = await Promise.all(
+    rows
+      .filter((row) => isDeletedRow(row))
+      .map((row) => rowToDeliveryWithNames(row, distributorMap, vehicleMap))
+  );
+  deliveries.sort((a, b) => {
+    const d = dateSortKey(b.date) - dateSortKey(a.date);
+    if (d !== 0) return d;
+    return timeSortKey(b.created_at) - timeSortKey(a.created_at) || b.id - a.id;
+  });
+  return deliveries;
+}
+
+/** Soft-deleted payments, newest first — for the Deleted entries page. */
+export async function listDeletedPayments(): Promise<PaymentWithNames[]> {
+  const sheet = await getWorksheet("Payments");
+  const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
+  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+  const payments = rows
+    .filter((row) => isDeletedRow(row))
+    .map((row) => rowToPaymentWithNames(row, distributorMap));
+  payments.sort((a, b) => {
+    const d = dateSortKey(b.date) - dateSortKey(a.date);
+    if (d !== 0) return d;
+    return timeSortKey(b.created_at) - timeSortKey(a.created_at) || b.id - a.id;
+  });
+  return payments;
+}
+
+/** Physically re-sorts the sheet's rows oldest-first by date then time, so
+ *  the Google Sheet itself always reads in chronological order. Best-effort:
+ *  entry saving must never fail because a cosmetic sort did. */
+async function sortSheetByDate(sheetName: "Deliveries" | "Payments"): Promise<void> {
+  try {
+    const sheet = await getWorksheet(sheetName);
+    const headers = sheet.headerValues ?? [];
+    const dateIdx = headers.indexOf("date");
+    const createdIdx = headers.indexOf("created_at");
+    if (dateIdx === -1) return;
+    await sheet.sortRange(
+      { startRowIndex: 1, endRowIndex: sheet.rowCount, startColumnIndex: 0, endColumnIndex: sheet.columnCount },
+      [
+        { dimensionIndex: dateIdx, sortOrder: "ASCENDING" },
+        ...(createdIdx !== -1
+          ? [{ dimensionIndex: createdIdx, sortOrder: "ASCENDING" as const }]
+          : []),
+      ]
+    );
+  } catch (err) {
+    console.warn(`[kcb] Could not sort sheet "${sheetName}":`, err);
+  }
 }
 
 // ---------- Payments ----------
@@ -503,10 +593,10 @@ export async function listPayments(filters?: {
 
   // Same ordering rule as deliveries: date, then the entry's own time.
   payments.sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-    const at = sortableTimestamp(a.created_at);
-    const bt = sortableTimestamp(b.created_at);
-    if (at !== bt) return at < bt ? 1 : -1;
+    const d = dateSortKey(b.date) - dateSortKey(a.date);
+    if (d !== 0) return d;
+    const t = timeSortKey(b.created_at) - timeSortKey(a.created_at);
+    if (t !== 0) return t;
     return b.id - a.id;
   });
 
@@ -534,6 +624,7 @@ export async function createPayment(data: {
     notes: data.notes ?? "",
     created_at: data.createdAt ?? nowIstTimestamp(),
   });
+  await sortSheetByDate("Payments");
   return id;
 }
 
