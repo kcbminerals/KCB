@@ -11,6 +11,7 @@ import {
   formatDate,
   formatDateTime,
   formatTime,
+  sortableTimestamp,
   todayIso,
   weekRange,
   monthRange,
@@ -75,7 +76,7 @@ export default async function DistributorDetailPage({
     })),
   ].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-    return a.created_at < b.created_at ? 1 : -1;
+    return sortableTimestamp(a.created_at) < sortableTimestamp(b.created_at) ? 1 : -1;
   });
 
   const period = {

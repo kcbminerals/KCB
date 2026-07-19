@@ -1,6 +1,6 @@
 import "server-only";
 import { getWorksheet, nextId } from "@/lib/sheets";
-import { nowIstTimestamp } from "@/lib/format";
+import { nowIstTimestamp, sortableTimestamp } from "@/lib/format";
 import type {
   Distributor,
   DistributorWithVehicle,
@@ -345,8 +345,13 @@ export async function listDeliveries(filters?: {
   if (filters?.distributorId)
     deliveries = deliveries.filter((d) => d.distributor_id === filters.distributorId);
 
+  // Newest first by the entry's own date and (editable) time — so a
+  // backdated entry recorded late still lands in its true position.
   deliveries.sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    const at = sortableTimestamp(a.created_at);
+    const bt = sortableTimestamp(b.created_at);
+    if (at !== bt) return at < bt ? 1 : -1;
     return b.id - a.id;
   });
 
@@ -496,8 +501,12 @@ export async function listPayments(filters?: {
   if (filters?.distributorId)
     payments = payments.filter((p) => p.distributor_id === filters.distributorId);
 
+  // Same ordering rule as deliveries: date, then the entry's own time.
   payments.sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    const at = sortableTimestamp(a.created_at);
+    const bt = sortableTimestamp(b.created_at);
+    if (at !== bt) return at < bt ? 1 : -1;
     return b.id - a.id;
   });
 
