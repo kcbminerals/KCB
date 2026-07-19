@@ -17,6 +17,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/distributors", label: "Distributors" },
   { href: "/reports", label: "Reports" },
   { href: "/users", label: "Users" },
+  { href: "/deleted", label: "Deleted" },
 ];
 
 const STAFF_NAV_ITEMS = [
