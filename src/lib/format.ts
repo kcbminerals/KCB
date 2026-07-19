@@ -47,6 +47,19 @@ export function formatDateTime(iso: string): string {
   return `${datePart} ${timePart}`;
 }
 
+/** Normalizes a stored timestamp to a sortable IST wall-clock string, so
+ *  naive-IST rows and older UTC-marked rows order correctly against each
+ *  other — used to keep backdated (late) entries in true time order. */
+export function sortableTimestamp(iso: string): string {
+  if (!iso) return "";
+  if (HAS_TZ_MARKER.test(iso)) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString("sv-SE", { timeZone: IST }).replace(" ", "T");
+  }
+  return iso;
+}
+
 /** Current IST time as an HH:MM string suitable for a <input type="time"> value. */
 export function nowTimeValue(): string {
   return new Date().toLocaleString("sv-SE", { timeZone: IST }).slice(11, 16);
