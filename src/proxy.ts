@@ -12,7 +12,8 @@ export async function proxy(request: NextRequest) {
 
   // Backup routes do their own auth (cron secret or admin session) — the
   // login redirect here would break the Vercel cron and file downloads.
-  if (pathname.startsWith("/api/backup")) {
+  // The version endpoint is public so stale tabs can detect new deploys.
+  if (pathname.startsWith("/api/backup") || pathname === "/api/version") {
     return NextResponse.next();
   }
 
