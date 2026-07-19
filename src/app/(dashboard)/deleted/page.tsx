@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import { listDeletedDeliveries, listDeletedPayments } from "@/lib/queries";
-import { formatMoney, formatDate, formatTime } from "@/lib/format";
+import { formatMoney, formatDate, formatDateTime, formatTime } from "@/lib/format";
 import { restoreDeliveryAction, restorePaymentAction } from "./actions";
 
 export default async function DeletedEntriesPage() {
@@ -38,13 +38,14 @@ export default async function DeletedEntriesPage() {
                 <th className="px-4 py-2 font-medium text-right">Jars</th>
                 <th className="px-4 py-2 font-medium text-right">Bill</th>
                 <th className="px-4 py-2 font-medium text-right">Paid</th>
+                <th className="px-4 py-2 font-medium">Deleted on</th>
                 <th className="px-4 py-2 font-medium"></th>
               </tr>
             </thead>
             <tbody>
               {deliveries.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
                     No deleted deliveries.
                   </td>
                 </tr>
@@ -59,6 +60,9 @@ export default async function DeletedEntriesPage() {
                   <td className="px-4 py-2 text-right">{d.jars_loaded}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(d.bill_amount)}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(d.paid_amount)}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500 whitespace-nowrap">
+                    {d.deleted_at ? formatDateTime(d.deleted_at) : "—"}
+                  </td>
                   <td className="px-4 py-2 text-right">
                     <form action={restoreDeliveryAction.bind(null, d.id)}>
                       <button
@@ -90,13 +94,14 @@ export default async function DeletedEntriesPage() {
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Method</th>
                 <th className="px-4 py-2 font-medium text-right">Amount</th>
+                <th className="px-4 py-2 font-medium">Deleted on</th>
                 <th className="px-4 py-2 font-medium"></th>
               </tr>
             </thead>
             <tbody>
               {payments.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
                     No deleted payments.
                   </td>
                 </tr>
@@ -110,6 +115,9 @@ export default async function DeletedEntriesPage() {
                   <td className="px-4 py-2">{p.distributor_name}</td>
                   <td className="px-4 py-2">{p.method ?? "—"}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(p.amount)}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500 whitespace-nowrap">
+                    {p.deleted_at ? formatDateTime(p.deleted_at) : "—"}
+                  </td>
                   <td className="px-4 py-2 text-right">
                     <form action={restorePaymentAction.bind(null, p.id)}>
                       <button
