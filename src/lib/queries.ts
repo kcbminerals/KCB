@@ -39,6 +39,17 @@ function numOrNull(row: SheetRow, key: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** A row counts as deleted when its "deleted" cell holds ANY mark — 1,
+ *  TRUE (sheet checkbox), "yes", etc. Only an empty cell (or an explicit
+ *  0/false/no) keeps the row live, so however the flag got written, a
+ *  deleted entry can never sneak back into reports. */
+function isDeletedRow(row: SheetRow): boolean {
+  const raw = row.get("deleted");
+  if (raw === undefined || raw === null) return false;
+  const s = String(raw).trim().toLowerCase();
+  return s !== "" && s !== "0" && s !== "false" && s !== "no";
+}
+
 // ---------- Distributors ----------
 
 function parseVehicleIds(row: SheetRow): number[] {
@@ -325,7 +336,7 @@ export async function listDeliveries(filters?: {
 
   let deliveries = await Promise.all(
     rows
-      .filter((row) => num(row, "deleted") !== 1)
+      .filter((row) => !isDeletedRow(row))
       .map((row) => rowToDeliveryWithNames(row, distributorMap, vehicleMap))
   );
 
@@ -350,7 +361,7 @@ export async function getDelivery(id: number): Promise<DeliveryWithNames | undef
     listDistributors(true),
     listVehicles(true),
   ]);
-  const row = rows.find((r) => num(r, "id") === id && num(r, "deleted") !== 1);
+  const row = rows.find((r) => num(r, "id") === id && !isDeletedRow(r));
   if (!row) return undefined;
   const distributorMap = new Map(distributors.map((d) => [d.id, d]));
   const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
@@ -463,7 +474,7 @@ export async function listPayments(filters?: {
   const distributorMap = new Map(distributors.map((d) => [d.id, d]));
 
   let payments = rows
-    .filter((row) => num(row, "deleted") !== 1)
+    .filter((row) => !isDeletedRow(row))
     .map((row) => rowToPaymentWithNames(row, distributorMap));
 
   if (filters?.from) payments = payments.filter((p) => p.date >= filters.from!);
