@@ -153,7 +153,7 @@ export default function DeliveryForm({
           id="jarsLoaded"
           name="jarsLoaded"
           type="number"
-          min="0"
+          min="1"
           required
           value={jarsLoaded}
           onChange={(e) => setJarsLoaded(Number(e.target.value) || 0)}
