@@ -74,7 +74,6 @@ export async function createPaymentAction(
 export async function deletePaymentAction(id: number) {
   await verifySession();
   await deletePayment(id);
-  revalidatePath("/payments");
-  revalidatePath("/");
-  revalidatePath("/distributors");
+  // A delete must disappear from every report and total at once.
+  revalidatePath("/", "layout");
 }

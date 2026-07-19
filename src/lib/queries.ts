@@ -433,15 +433,29 @@ export async function updateDelivery(
   await row.save();
 }
 
-export async function deleteDelivery(id: number): Promise<void> {
-  // Soft delete: the row is only flagged, never removed from the sheet,
-  // so no action in the app can permanently destroy a record.
-  const sheet = await getWorksheet("Deliveries");
+/** Soft delete: the row is only flagged, never removed from the sheet, so
+ *  no action in the app can permanently destroy a record. The header check
+ *  matters: row.set() on a column missing from the cached header list
+ *  writes nowhere WITHOUT an error, which would leave the entry counting
+ *  in reports while looking deleted. */
+async function softDeleteRow(
+  sheetName: "Deliveries" | "Payments",
+  id: number
+): Promise<void> {
+  const sheet = await getWorksheet(sheetName);
+  await sheet.loadHeaderRow();
+  if (!sheet.headerValues.includes("deleted")) {
+    await sheet.setHeaderRow([...sheet.headerValues, "deleted"]);
+  }
   const rows = await sheet.getRows();
   const row = rows.find((r) => num(r, "id") === id);
   if (!row) return;
   row.set("deleted", 1);
   await row.save();
+}
+
+export async function deleteDelivery(id: number): Promise<void> {
+  await softDeleteRow("Deliveries", id);
 }
 
 // ---------- Payments ----------
@@ -515,14 +529,7 @@ export async function createPayment(data: {
 }
 
 export async function deletePayment(id: number): Promise<void> {
-  // Soft delete: the row is only flagged, never removed from the sheet,
-  // so no action in the app can permanently destroy a record.
-  const sheet = await getWorksheet("Payments");
-  const rows = await sheet.getRows();
-  const row = rows.find((r) => num(r, "id") === id);
-  if (!row) return;
-  row.set("deleted", 1);
-  await row.save();
+  await softDeleteRow("Payments", id);
 }
 
 // ---------- Reports & Dashboard ----------

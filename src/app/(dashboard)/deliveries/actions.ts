@@ -121,7 +121,6 @@ export async function updateDeliveryAction(
 export async function deleteDeliveryAction(id: number) {
   await verifySession();
   await deleteDelivery(id);
-  revalidatePath("/deliveries");
-  revalidatePath("/");
-  revalidatePath("/distributors");
+  // A delete must disappear from every report and total at once.
+  revalidatePath("/", "layout");
 }
