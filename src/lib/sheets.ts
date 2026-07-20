@@ -160,48 +160,6 @@ async function protectSheets(doc: GoogleSpreadsheet): Promise<void> {
   }
 }
 
-/** One-off sweep: rows already flagged deleted in the main tabs are moved
- *  to their archive tab. Each row is copied and VERIFIED in the archive
- *  before it is removed from the main tab — the copy-first rule that keeps
- *  the "data is never lost" guarantee. */
-async function sweepFlaggedRowsToArchive(doc: GoogleSpreadsheet): Promise<void> {
-  const pairs: [string, string][] = [
-    ["Deliveries", "DeletedDeliveries"],
-    ["Payments", "DeletedPayments"],
-  ];
-  for (const [mainName, archiveName] of pairs) {
-    try {
-      const main = doc.sheetsByTitle[mainName];
-      const archive = doc.sheetsByTitle[archiveName];
-      if (!main || !archive) continue;
-      // One row per pass with a fresh fetch each time: deleting a row
-      // shifts the ones below it, so stale row handles must not be reused.
-      for (;;) {
-        const rows = await main.getRows();
-        const target = rows.find((r) => {
-          const v = String(r.get("deleted") ?? "").trim().toLowerCase();
-          return v !== "" && v !== "0" && v !== "false" && v !== "no";
-        });
-        if (!target) break;
-        const values: Record<string, string | number | boolean> = {};
-        for (const h of main.headerValues ?? [])
-          values[h] = (target.get(h) as string | number | boolean) ?? "";
-        values["deleted_at"] = nowIstTimestamp();
-        await archive.addRow(values);
-        const copied = await archive.getRows();
-        const id = Number(target.get("id"));
-        if (!copied.some((r) => Number(r.get("id")) === id)) {
-          console.warn(`[kcb] Archive copy not verified for ${mainName} id ${id}; leaving row in place.`);
-          break;
-        }
-        await target.delete();
-      }
-    } catch (err) {
-      console.warn(`[kcb] Could not sweep deleted rows from ${mainName}:`, err);
-    }
-  }
-}
-
 async function migrate(): Promise<void> {
   const doc = getDoc();
   await doc.loadInfo();
@@ -211,7 +169,10 @@ async function migrate(): Promise<void> {
   }
 
   await protectSheets(doc);
-  await sweepFlaggedRowsToArchive(doc);
+  // NOTE: no automatic moving of rows here. Entries only ever move to the
+  // Deleted tabs when someone explicitly deletes them in the app — never
+  // on startup — so restoring an old sheet version can't silently sweep
+  // live entries into the archive.
 
   const usersSheet = doc.sheetsByTitle["Users"];
   const userRows = await usersSheet.getRows();
