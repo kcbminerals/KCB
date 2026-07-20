@@ -242,8 +242,16 @@ export function ensureMigrated(): Promise<void> {
 
 export async function getWorksheet(title: SheetName): Promise<GoogleSpreadsheetWorksheet> {
   await ensureMigrated();
-  const doc = getDoc();
-  const sheet = doc.sheetsByTitle[title];
+  let sheet = getDoc().sheetsByTitle[title];
+  if (!sheet) {
+    // The tab is missing even though this instance already migrated — most
+    // likely the sheet was rolled back in Google Sheets' Version history,
+    // which drops tabs the app created. Re-run migration once to rebuild
+    // any missing tabs/columns, so the app self-heals without a redeploy.
+    globalThis.__kcbSheetsReady = undefined;
+    await ensureMigrated();
+    sheet = getDoc().sheetsByTitle[title];
+  }
   if (!sheet) {
     throw new Error(`Worksheet "${title}" not found after migration.`);
   }
