@@ -30,6 +30,8 @@ const VEHICLES_HEADERS = ["id", "name", "plate_number", "active", "created_at"];
 const DELIVERIES_HEADERS = [
   "id",
   "date",
+  "distributor_name",
+  "vehicle_number",
   "distributor_id",
   "vehicle_id",
   "jars_loaded",
@@ -44,6 +46,7 @@ const DELIVERIES_HEADERS = [
 const PAYMENTS_HEADERS = [
   "id",
   "date",
+  "distributor_name",
   "distributor_id",
   "amount",
   "method",

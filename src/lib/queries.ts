@@ -377,6 +377,12 @@ export async function getDelivery(id: number): Promise<DeliveryWithNames | undef
   return rowToDeliveryWithNames(row, distributorMap, vehicleMap);
 }
 
+/** Human-readable labels written into the sheet so the Deliveries tab is
+ *  legible by hand — the id columns remain the app's actual link. */
+function vehicleLabel(v: Vehicle | undefined): string {
+  return v ? `${v.name}${v.plate_number ? ` (${v.plate_number})` : ""}` : "";
+}
+
 export async function createDelivery(data: {
   date: string;
   distributorId: number;
@@ -389,12 +395,18 @@ export async function createDelivery(data: {
   createdAt?: string | null;
 }): Promise<number> {
   const sheet = await getWorksheet("Deliveries");
-  const rows = await sheet.getRows();
+  const [rows, dist, veh] = await Promise.all([
+    sheet.getRows(),
+    getDistributor(data.distributorId),
+    data.vehicleId ? getVehicle(data.vehicleId) : Promise.resolve(undefined),
+  ]);
   const id = nextId(rows);
   const billAmount = data.jarsLoaded * data.pricePerJar;
   await sheet.addRow({
     id,
     date: data.date,
+    distributor_name: dist?.name ?? "",
+    vehicle_number: vehicleLabel(veh),
     distributor_id: data.distributorId,
     vehicle_id: data.vehicleId ?? "",
     jars_loaded: data.jarsLoaded,
@@ -424,12 +436,18 @@ export async function updateDelivery(
   }
 ): Promise<void> {
   const sheet = await getWorksheet("Deliveries");
-  const rows = await sheet.getRows();
+  const [rows, dist, veh] = await Promise.all([
+    sheet.getRows(),
+    getDistributor(data.distributorId),
+    data.vehicleId ? getVehicle(data.vehicleId) : Promise.resolve(undefined),
+  ]);
   const row = rows.find((r) => num(r, "id") === id);
   if (!row) return;
   const billAmount = data.jarsLoaded * data.pricePerJar;
   row.assign({
     date: data.date,
+    distributor_name: dist?.name ?? "",
+    vehicle_number: vehicleLabel(veh),
     distributor_id: data.distributorId,
     vehicle_id: data.vehicleId ?? "",
     jars_loaded: data.jarsLoaded,
@@ -639,11 +657,15 @@ export async function createPayment(data: {
   createdAt?: string | null;
 }): Promise<number> {
   const sheet = await getWorksheet("Payments");
-  const rows = await sheet.getRows();
+  const [rows, dist] = await Promise.all([
+    sheet.getRows(),
+    getDistributor(data.distributorId),
+  ]);
   const id = nextId(rows);
   await sheet.addRow({
     id,
     date: data.date,
+    distributor_name: dist?.name ?? "",
     distributor_id: data.distributorId,
     amount: data.amount,
     method: data.method ?? "",
