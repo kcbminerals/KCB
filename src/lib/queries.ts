@@ -12,8 +12,8 @@ import type {
 } from "@/lib/types";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
 
-// Note: deliberately no delete() here — rows are never removed from the
-// sheet, only flagged via the "deleted" column (soft delete).
+// Note: deliberately no delete() here — removing a row is only allowed
+// through the copy-first archive helpers below (see RemovableRow).
 type SheetRow = {
   get(key: string): unknown;
   set(key: string, value: unknown): void;
@@ -444,55 +444,79 @@ export async function updateDelivery(
   await sortSheetByDate("Deliveries");
 }
 
-/** Soft delete: the row is only flagged, never removed from the sheet, so
- *  no action in the app can permanently destroy a record. The header check
- *  matters: row.set() on a column missing from the cached header list
- *  writes nowhere WITHOUT an error, which would leave the entry counting
- *  in reports while looking deleted. */
-async function softDeleteRow(
-  sheetName: "Deliveries" | "Payments",
+// Rows may only ever be removed from a tab AFTER a verified copy exists in
+// another tab (archive on delete, main on restore) — the copy-first rule
+// that keeps "data is never lost" true even though tabs stay clean.
+type RemovableRow = SheetRow & { delete(): Promise<void> };
+
+/** Deleting an entry MOVES it to the archive tab: copy to the archive,
+ *  verify the copy landed, and only then remove it from the main tab. */
+async function moveRowToArchive(
+  mainName: "Deliveries" | "Payments",
   id: number
 ): Promise<void> {
-  const sheet = await getWorksheet(sheetName);
-  await sheet.loadHeaderRow();
-  if (!sheet.headerValues.includes("deleted")) {
-    await sheet.setHeaderRow([...sheet.headerValues, "deleted"]);
-  }
+  const archiveName = mainName === "Deliveries" ? "DeletedDeliveries" : "DeletedPayments";
+  const sheet = await getWorksheet(mainName);
   const rows = await sheet.getRows();
   const row = rows.find((r) => num(r, "id") === id);
   if (!row) return;
-  row.set("deleted", 1);
-  await row.save();
+  const archive = await getWorksheet(archiveName);
+  const values: Record<string, string | number | boolean> = {};
+  for (const h of sheet.headerValues ?? [])
+    values[h] = (row.get(h) as string | number | boolean) ?? "";
+  values["deleted"] = 1;
+  values["deleted_at"] = nowIstTimestamp();
+  await archive.addRow(values);
+  const copied = await archive.getRows();
+  if (!copied.some((r) => num(r, "id") === id)) {
+    throw new Error(`Archive copy could not be verified for ${mainName} id ${id}; entry NOT deleted.`);
+  }
+  await (row as RemovableRow).delete();
 }
 
 export async function deleteDelivery(id: number): Promise<void> {
-  await softDeleteRow("Deliveries", id);
+  await moveRowToArchive("Deliveries", id);
 }
 
-/** Clears the deleted flag so the entry counts again everywhere. */
-async function restoreRow(
-  sheetName: "Deliveries" | "Payments",
+/** Restoring moves the entry back from the archive tab to the main tab,
+ *  with the same copy-first verification, then re-sorts the main tab. */
+async function restoreFromArchive(
+  mainName: "Deliveries" | "Payments",
   id: number
 ): Promise<void> {
-  const sheet = await getWorksheet(sheetName);
-  const rows = await sheet.getRows();
+  const archiveName = mainName === "Deliveries" ? "DeletedDeliveries" : "DeletedPayments";
+  const archive = await getWorksheet(archiveName);
+  const rows = await archive.getRows();
   const row = rows.find((r) => num(r, "id") === id);
   if (!row) return;
-  row.set("deleted", "");
-  await row.save();
+  const sheet = await getWorksheet(mainName);
+  const values: Record<string, string | number | boolean> = {};
+  for (const h of sheet.headerValues ?? [])
+    values[h] = (row.get(h) as string | number | boolean) ?? "";
+  values["deleted"] = "";
+  await sheet.addRow(values);
+  const restored = await sheet.getRows();
+  if (!restored.some((r) => num(r, "id") === id)) {
+    throw new Error(`Restore copy could not be verified for ${mainName} id ${id}; archive row kept.`);
+  }
+  await (row as RemovableRow).delete();
+  await sortSheetByDate(mainName);
 }
 
 export async function restoreDelivery(id: number): Promise<void> {
-  await restoreRow("Deliveries", id);
+  await restoreFromArchive("Deliveries", id);
 }
 
 export async function restorePayment(id: number): Promise<void> {
-  await restoreRow("Payments", id);
+  await restoreFromArchive("Payments", id);
 }
 
-/** Soft-deleted deliveries, newest first — for the Deleted entries page. */
-export async function listDeletedDeliveries(): Promise<DeliveryWithNames[]> {
-  const sheet = await getWorksheet("Deliveries");
+export type DeletedDelivery = DeliveryWithNames & { deleted_at: string };
+export type DeletedPayment = PaymentWithNames & { deleted_at: string };
+
+/** Archived (deleted) deliveries, newest first — for the Deleted page. */
+export async function listDeletedDeliveries(): Promise<DeletedDelivery[]> {
+  const sheet = await getWorksheet("DeletedDeliveries");
   const [rows, distributors, vehicles] = await Promise.all([
     sheet.getRows(),
     listDistributors(true),
@@ -501,9 +525,10 @@ export async function listDeletedDeliveries(): Promise<DeliveryWithNames[]> {
   const distributorMap = new Map(distributors.map((d) => [d.id, d]));
   const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
   const deliveries = await Promise.all(
-    rows
-      .filter((row) => isDeletedRow(row))
-      .map((row) => rowToDeliveryWithNames(row, distributorMap, vehicleMap))
+    rows.map(async (row) => ({
+      ...(await rowToDeliveryWithNames(row, distributorMap, vehicleMap)),
+      deleted_at: str(row, "deleted_at") ?? "",
+    }))
   );
   deliveries.sort((a, b) => {
     const d = dateSortKey(b.date) - dateSortKey(a.date);
@@ -513,14 +538,15 @@ export async function listDeletedDeliveries(): Promise<DeliveryWithNames[]> {
   return deliveries;
 }
 
-/** Soft-deleted payments, newest first — for the Deleted entries page. */
-export async function listDeletedPayments(): Promise<PaymentWithNames[]> {
-  const sheet = await getWorksheet("Payments");
+/** Archived (deleted) payments, newest first — for the Deleted page. */
+export async function listDeletedPayments(): Promise<DeletedPayment[]> {
+  const sheet = await getWorksheet("DeletedPayments");
   const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
   const distributorMap = new Map(distributors.map((d) => [d.id, d]));
-  const payments = rows
-    .filter((row) => isDeletedRow(row))
-    .map((row) => rowToPaymentWithNames(row, distributorMap));
+  const payments = rows.map((row) => ({
+    ...rowToPaymentWithNames(row, distributorMap),
+    deleted_at: str(row, "deleted_at") ?? "",
+  }));
   payments.sort((a, b) => {
     const d = dateSortKey(b.date) - dateSortKey(a.date);
     if (d !== 0) return d;
@@ -629,7 +655,7 @@ export async function createPayment(data: {
 }
 
 export async function deletePayment(id: number): Promise<void> {
-  await softDeleteRow("Payments", id);
+  await moveRowToArchive("Payments", id);
 }
 
 // ---------- Reports & Dashboard ----------
