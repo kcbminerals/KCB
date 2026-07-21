@@ -10,8 +10,18 @@ import {
   setDistributorActive,
   createVehicle,
   listVehicles,
+  listDistributors,
 } from "@/lib/queries";
 import { DISTRIBUTOR_CATEGORIES } from "@/lib/types";
+
+/** Entries link to a distributor by name, so two distributors sharing a name
+ *  would merge their dues. Reject a duplicate (case-insensitive), ignoring
+ *  the distributor being edited. */
+async function nameTaken(name: string, exceptId?: number): Promise<boolean> {
+  const key = name.trim().toLowerCase();
+  const all = await listDistributors(true);
+  return all.some((d) => d.id !== exceptId && d.name.trim().toLowerCase() === key);
+}
 
 const distributorSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -76,6 +86,9 @@ export async function createDistributorAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
+  if (await nameTaken(parsed.data.name)) {
+    return { error: `A distributor named "${parsed.data.name}" already exists. Use a distinct name.` };
+  }
   const newVehicleIds = await resolveNewVehicles(formData);
   await createDistributor({
     ...parsed.data,
@@ -96,6 +109,9 @@ export async function updateDistributorAction(
   const parsed = parseDistributor(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  if (await nameTaken(parsed.data.name, id)) {
+    return { error: `A distributor named "${parsed.data.name}" already exists. Use a distinct name.` };
   }
   const newVehicleIds = await resolveNewVehicles(formData);
   await updateDistributor(id, {

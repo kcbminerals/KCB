@@ -1,5 +1,5 @@
 import "server-only";
-import { getWorksheet, nextId } from "@/lib/sheets";
+import { getWorksheet, nextId, type SheetName } from "@/lib/sheets";
 import { nowIstTimestamp, dateSortKey, timeSortKey } from "@/lib/format";
 import type {
   Distributor,
@@ -169,6 +169,7 @@ export async function updateDistributor(
   const rows = await sheet.getRows();
   const row = rows.find((r) => num(r, "id") === id);
   if (!row) return;
+  const oldName = str(row, "name") ?? "";
   const vehicleIds = data.vehicleIds ?? [];
   row.assign({
     name: data.name,
@@ -181,6 +182,44 @@ export async function updateDistributor(
     opening_balance: data.openingBalance ?? 0,
   });
   await row.save();
+  // The Deliveries/Payments tabs store the distributor NAME as the link, so
+  // a rename must update every past entry to keep them connected.
+  await cascadeRename("distributor_name", oldName, data.name);
+}
+
+/** Updates the stored name/number in every entry row when a distributor or
+ *  vehicle is renamed, so entries stay linked to it (the entry tabs key on
+ *  the name/number, not an id). */
+async function cascadeRename(
+  field: "distributor_name" | "vehicle_number",
+  oldName: string,
+  newName: string
+): Promise<void> {
+  if (!oldName.trim() || oldName.trim().toLowerCase() === newName.trim().toLowerCase()) {
+    return;
+  }
+  const sheets: SheetName[] =
+    field === "distributor_name"
+      ? ["Deliveries", "Payments", "DeletedDeliveries", "DeletedPayments"]
+      : ["Deliveries", "DeletedDeliveries"];
+  const oldKey = oldName.trim().toLowerCase();
+  for (const name of sheets) {
+    try {
+      const sheet = await getWorksheet(name);
+      if (!(sheet.headerValues ?? []).includes(field)) continue;
+      const entryRows = await sheet.getRows();
+      for (const r of entryRows) {
+        const raw = String(r.get(field) ?? "").trim().toLowerCase();
+        const key = field === "vehicle_number" ? raw.replace(/\s*\(.*\)\s*$/, "").trim() : raw;
+        if (key === oldKey) {
+          r.set(field, newName);
+          await r.save();
+        }
+      }
+    } catch (err) {
+      console.warn(`[kcb] Rename cascade failed for ${name}:`, err);
+    }
+  }
 }
 
 export async function setDistributorActive(id: number, active: boolean): Promise<void> {
@@ -283,8 +322,10 @@ export async function updateVehicle(
   const rows = await sheet.getRows();
   const row = rows.find((r) => num(r, "id") === id);
   if (!row) return;
+  const oldName = str(row, "name") ?? "";
   row.assign({ name: data.name, plate_number: data.plateNumber ?? "" });
   await row.save();
+  await cascadeRename("vehicle_number", oldName, data.name);
 }
 
 export async function setVehicleActive(id: number, active: boolean): Promise<void> {
@@ -298,18 +339,64 @@ export async function setVehicleActive(id: number, active: boolean): Promise<voi
 
 // ---------- Deliveries ----------
 
-async function rowToDeliveryWithNames(
+// The Deliveries/Payments tabs store the distributor NAME and vehicle NUMBER
+// (not ids). To keep every report and dues total working unchanged, each row
+// is resolved back to its distributor/vehicle record — and thus its internal
+// id — at read time. Older rows that still carry an id are resolved by id as
+// a fallback, so this works during and after the one-time migration.
+type DistCtx = { byId: Map<number, Distributor>; byName: Map<string, Distributor> };
+type VehCtx = { byId: Map<number, Vehicle>; byName: Map<string, Vehicle> };
+
+function makeDistCtx(distributors: Distributor[]): DistCtx {
+  return {
+    byId: new Map(distributors.map((d) => [d.id, d])),
+    byName: new Map(distributors.map((d) => [d.name.trim().toLowerCase(), d])),
+  };
+}
+function makeVehCtx(vehicles: Vehicle[]): VehCtx {
+  return {
+    byId: new Map(vehicles.map((v) => [v.id, v])),
+    byName: new Map(vehicles.map((v) => [v.name.trim().toLowerCase(), v])),
+  };
+}
+
+/** Drops a "(plate)" suffix so a stored "KA01AB1234 (plate)" still matches. */
+function vehicleNumberKey(raw: string): string {
+  return raw.replace(/\s*\(.*\)\s*$/, "").trim().toLowerCase();
+}
+
+function resolveDistributor(row: SheetRow, ctx: DistCtx): Distributor | undefined {
+  const name = str(row, "distributor_name");
+  if (name) {
+    const d = ctx.byName.get(name.trim().toLowerCase());
+    if (d) return d;
+  }
+  const id = num(row, "distributor_id");
+  return id ? ctx.byId.get(id) : undefined;
+}
+
+function resolveVehicle(row: SheetRow, ctx: VehCtx): Vehicle | undefined {
+  const number = str(row, "vehicle_number");
+  if (number) {
+    const v = ctx.byName.get(vehicleNumberKey(number));
+    if (v) return v;
+  }
+  const id = numOrNull(row, "vehicle_id");
+  return id ? ctx.byId.get(id) : undefined;
+}
+
+function rowToDeliveryWithNames(
   row: SheetRow,
-  distributorMap: Map<number, Distributor>,
-  vehicleMap: Map<number, Vehicle>
-): Promise<DeliveryWithNames> {
-  const distributorId = num(row, "distributor_id");
-  const vehicleId = numOrNull(row, "vehicle_id");
+  dctx: DistCtx,
+  vctx: VehCtx
+): DeliveryWithNames {
+  const dist = resolveDistributor(row, dctx);
+  const veh = resolveVehicle(row, vctx);
   return {
     id: num(row, "id"),
     date: str(row, "date") ?? "",
-    distributor_id: distributorId,
-    vehicle_id: vehicleId,
+    distributor_id: dist?.id ?? num(row, "distributor_id"),
+    vehicle_id: veh?.id ?? numOrNull(row, "vehicle_id"),
     jars_loaded: num(row, "jars_loaded"),
     jars_returned: num(row, "jars_returned"),
     price_per_jar: num(row, "price_per_jar"),
@@ -317,8 +404,8 @@ async function rowToDeliveryWithNames(
     paid_amount: num(row, "paid_amount"),
     notes: str(row, "notes"),
     created_at: str(row, "created_at") ?? "",
-    distributor_name: distributorMap.get(distributorId)?.name ?? "Unknown",
-    vehicle_name: vehicleId ? (vehicleMap.get(vehicleId)?.name ?? null) : null,
+    distributor_name: dist?.name ?? str(row, "distributor_name") ?? "Unknown",
+    vehicle_name: veh?.name ?? str(row, "vehicle_number"),
   };
 }
 
@@ -334,14 +421,12 @@ export async function listDeliveries(filters?: {
     listDistributors(true),
     listVehicles(true),
   ]);
-  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
-  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
+  const dctx = makeDistCtx(distributors);
+  const vctx = makeVehCtx(vehicles);
 
-  let deliveries = await Promise.all(
-    rows
-      .filter((row) => !isDeletedRow(row))
-      .map((row) => rowToDeliveryWithNames(row, distributorMap, vehicleMap))
-  );
+  let deliveries = rows
+    .filter((row) => !isDeletedRow(row))
+    .map((row) => rowToDeliveryWithNames(row, dctx, vctx));
 
   if (filters?.from) deliveries = deliveries.filter((d) => d.date >= filters.from!);
   if (filters?.to) deliveries = deliveries.filter((d) => d.date <= filters.to!);
@@ -372,15 +457,14 @@ export async function getDelivery(id: number): Promise<DeliveryWithNames | undef
   ]);
   const row = rows.find((r) => num(r, "id") === id && !isDeletedRow(r));
   if (!row) return undefined;
-  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
-  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
-  return rowToDeliveryWithNames(row, distributorMap, vehicleMap);
+  return rowToDeliveryWithNames(row, makeDistCtx(distributors), makeVehCtx(vehicles));
 }
 
-/** Human-readable labels written into the sheet so the Deliveries tab is
- *  legible by hand — the id columns remain the app's actual link. */
+/** The vehicle number stored in the Deliveries tab — the vehicle's name is
+ *  its number in this business. Kept plain (no plate suffix) so it reads
+ *  back cleanly when resolving the row to a vehicle. */
 function vehicleLabel(v: Vehicle | undefined): string {
-  return v ? `${v.name}${v.plate_number ? ` (${v.plate_number})` : ""}` : "";
+  return v?.name ?? "";
 }
 
 export async function createDelivery(data: {
@@ -407,8 +491,6 @@ export async function createDelivery(data: {
     date: data.date,
     distributor_name: dist?.name ?? "",
     vehicle_number: vehicleLabel(veh),
-    distributor_id: data.distributorId,
-    vehicle_id: data.vehicleId ?? "",
     jars_loaded: data.jarsLoaded,
     jars_returned: data.jarsReturned ?? 0,
     price_per_jar: data.pricePerJar,
@@ -448,8 +530,6 @@ export async function updateDelivery(
     date: data.date,
     distributor_name: dist?.name ?? "",
     vehicle_number: vehicleLabel(veh),
-    distributor_id: data.distributorId,
-    vehicle_id: data.vehicleId ?? "",
     jars_loaded: data.jarsLoaded,
     jars_returned: data.jarsReturned ?? 0,
     price_per_jar: data.pricePerJar,
@@ -540,14 +620,12 @@ export async function listDeletedDeliveries(): Promise<DeletedDelivery[]> {
     listDistributors(true),
     listVehicles(true),
   ]);
-  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
-  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
-  const deliveries = await Promise.all(
-    rows.map(async (row) => ({
-      ...(await rowToDeliveryWithNames(row, distributorMap, vehicleMap)),
-      deleted_at: str(row, "deleted_at") ?? "",
-    }))
-  );
+  const dctx = makeDistCtx(distributors);
+  const vctx = makeVehCtx(vehicles);
+  const deliveries = rows.map((row) => ({
+    ...rowToDeliveryWithNames(row, dctx, vctx),
+    deleted_at: str(row, "deleted_at") ?? "",
+  }));
   deliveries.sort((a, b) => {
     const d = dateSortKey(b.date) - dateSortKey(a.date);
     if (d !== 0) return d;
@@ -560,9 +638,9 @@ export async function listDeletedDeliveries(): Promise<DeletedDelivery[]> {
 export async function listDeletedPayments(): Promise<DeletedPayment[]> {
   const sheet = await getWorksheet("DeletedPayments");
   const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
-  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+  const dctx = makeDistCtx(distributors);
   const payments = rows.map((row) => ({
-    ...rowToPaymentWithNames(row, distributorMap),
+    ...rowToPaymentWithNames(row, dctx),
     deleted_at: str(row, "deleted_at") ?? "",
   }));
   payments.sort((a, b) => {
@@ -599,20 +677,17 @@ async function sortSheetByDate(sheetName: "Deliveries" | "Payments"): Promise<vo
 
 // ---------- Payments ----------
 
-function rowToPaymentWithNames(
-  row: SheetRow,
-  distributorMap: Map<number, Distributor>
-): PaymentWithNames {
-  const distributorId = num(row, "distributor_id");
+function rowToPaymentWithNames(row: SheetRow, dctx: DistCtx): PaymentWithNames {
+  const dist = resolveDistributor(row, dctx);
   return {
     id: num(row, "id"),
     date: str(row, "date") ?? "",
-    distributor_id: distributorId,
+    distributor_id: dist?.id ?? num(row, "distributor_id"),
     amount: num(row, "amount"),
     method: str(row, "method"),
     notes: str(row, "notes"),
     created_at: str(row, "created_at") ?? "",
-    distributor_name: distributorMap.get(distributorId)?.name ?? "Unknown",
+    distributor_name: dist?.name ?? str(row, "distributor_name") ?? "Unknown",
   };
 }
 
@@ -624,11 +699,11 @@ export async function listPayments(filters?: {
 }): Promise<PaymentWithNames[]> {
   const sheet = await getWorksheet("Payments");
   const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
-  const distributorMap = new Map(distributors.map((d) => [d.id, d]));
+  const dctx = makeDistCtx(distributors);
 
   let payments = rows
     .filter((row) => !isDeletedRow(row))
-    .map((row) => rowToPaymentWithNames(row, distributorMap));
+    .map((row) => rowToPaymentWithNames(row, dctx));
 
   if (filters?.from) payments = payments.filter((p) => p.date >= filters.from!);
   if (filters?.to) payments = payments.filter((p) => p.date <= filters.to!);
@@ -666,7 +741,6 @@ export async function createPayment(data: {
     id,
     date: data.date,
     distributor_name: dist?.name ?? "",
-    distributor_id: data.distributorId,
     amount: data.amount,
     method: data.method ?? "",
     notes: data.notes ?? "",
