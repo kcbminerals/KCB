@@ -1,16 +1,54 @@
 @import "tailwindcss";
 
+:root {
+  --bg: #f6f8fb;
+  --accent: #2563eb;
+}
+
 body {
   font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, sans-serif;
-  background:
-    radial-gradient(1100px 420px at 85% -10%, rgba(14, 165, 233, 0.09), transparent 60%),
-    radial-gradient(900px 320px at -10% 0%, rgba(14, 165, 233, 0.05), transparent 55%),
-    #f8fafc;
+  background: var(--bg);
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: #bae6fd;
+  background: #dbeafe;
+}
+
+/* Reusable, minimal component styles for a consistent premium look. */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-slate-200/70 bg-white;
+    box-shadow:
+      0 1px 2px rgba(16, 24, 40, 0.04),
+      0 1px 3px rgba(16, 24, 40, 0.06);
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition
+      placeholder:text-slate-400
+      focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white
+      shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 active:bg-blue-800
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-emerald {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white
+      shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700 active:bg-emerald-800
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600
+      transition hover:bg-slate-50 hover:text-slate-900;
+  }
 }
 
 @media print {

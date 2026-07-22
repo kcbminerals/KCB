@@ -37,40 +37,40 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col">
       <AutoRefresh />
-      <header className="no-print sticky top-0 z-40 bg-gradient-to-r from-sky-700 via-sky-600 to-sky-500 shadow-lg shadow-sky-900/20">
+      <header className="no-print sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center justify-between">
             <Link
               href={session.role === "admin" ? "/" : "/deliveries"}
-              className="rounded-xl bg-white px-2.5 py-1.5 shadow-md"
+              className="flex items-center"
             >
               <Image
                 src="/logo.png"
                 alt="KCB Minerals"
                 width={188}
                 height={103}
-                className="h-8 w-auto"
+                className="h-9 w-auto"
                 priority
               />
             </Link>
             <div className="flex items-center gap-1 sm:hidden">
               <Link
                 href="/account"
-                className="rounded-full px-3 py-1.5 text-sm font-medium text-sky-100 transition-colors hover:bg-white/15 hover:text-white"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               >
                 Account
               </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="rounded-full px-3 py-1.5 text-sm font-medium text-sky-100 transition-colors hover:bg-white/15 hover:text-white"
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 >
                   Sign out
                 </button>
               </form>
             </div>
           </div>
-          <nav className="flex flex-wrap gap-1">
+          <nav className="flex flex-wrap gap-0.5">
             {navItems.map((item) => (
               <NavLink key={item.href} href={item.href}>
                 {item.label}
@@ -80,17 +80,17 @@ export default async function DashboardLayout({
           <div className="hidden items-center gap-3 sm:flex">
             <Link
               href="/account"
-              className="text-sm font-medium text-sky-50 hover:text-white hover:underline"
+              className="group flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900"
             >
               {session.name}
-              <span className="ml-1.5 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 group-hover:bg-slate-200">
                 {session.role === "admin" ? "Admin" : "Staff"}
               </span>
             </Link>
             <form action={logoutAction}>
               <button
                 type="submit"
-                className="rounded-full px-3 py-1.5 text-sm font-medium text-sky-100 transition-colors hover:bg-white/15 hover:text-white"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               >
                 Sign out
               </button>
@@ -98,11 +98,11 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         {children}
       </main>
-      <footer className="no-print border-t border-slate-200/80 bg-white/60 px-4 py-3 text-center text-xs text-slate-400">
-        KCB Minerals
+      <footer className="no-print border-t border-slate-200/70 px-4 py-4 text-center text-xs text-slate-400">
+        KCB Minerals · Water Delivery Management
       </footer>
     </div>
   );
