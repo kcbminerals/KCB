@@ -160,100 +160,6 @@ async function protectSheets(doc: GoogleSpreadsheet): Promise<void> {
   }
 }
 
-/** One-time migration to a names-only entry sheet: fills distributor_name /
- *  vehicle_number from the legacy id columns, then removes the id columns.
- *  Ordered so nothing is orphaned — a row's name is written (and confirmed
- *  present) before its id is dropped; distributor_id is only removed once
- *  every row has a resolved name. Per-tab try/catch means a hiccup just
- *  leaves that tab for the next run; it never breaks the app. */
-async function replaceIdColumnsWithNames(doc: GoogleSpreadsheet): Promise<void> {
-  const distName = new Map<number, string>();
-  const vehName = new Map<number, string>();
-  try {
-    for (const r of await doc.sheetsByTitle["Distributors"].getRows()) {
-      distName.set(Number(r.get("id")), String(r.get("name") ?? "").trim());
-    }
-    for (const r of await doc.sheetsByTitle["Vehicles"].getRows()) {
-      vehName.set(Number(r.get("id")), String(r.get("name") ?? "").trim());
-    }
-  } catch {
-    return; // registries unreadable — try again next run
-  }
-
-  const tabs: { name: string; hasVehicle: boolean }[] = [
-    { name: "Deliveries", hasVehicle: true },
-    { name: "Payments", hasVehicle: false },
-    { name: "DeletedDeliveries", hasVehicle: true },
-    { name: "DeletedPayments", hasVehicle: false },
-  ];
-
-  for (const { name, hasVehicle } of tabs) {
-    try {
-      const sheet = doc.sheetsByTitle[name];
-      if (!sheet) continue;
-      await sheet.loadHeaderRow().catch(() => undefined);
-      const headers = sheet.headerValues ?? [];
-      const cDistId = headers.indexOf("distributor_id");
-      const cVehId = headers.indexOf("vehicle_id");
-      const cDistName = headers.indexOf("distributor_name");
-      const cVehNum = headers.indexOf("vehicle_number");
-      if (cDistId === -1 && cVehId === -1) continue; // already migrated
-
-      const rows = await sheet.getRows();
-      let allDistNamed = true;
-      if (rows.length > 0) {
-        const maxRow = Math.max(...rows.map((r) => r.rowNumber));
-        // One batched cell load/save for the whole tab instead of a save
-        // per row — fast enough to finish well inside a request.
-        await sheet.loadCells({
-          startRowIndex: 1,
-          endRowIndex: maxRow,
-          startColumnIndex: 0,
-          endColumnIndex: headers.length,
-        });
-        for (const row of rows) {
-          const r0 = row.rowNumber - 1; // 0-based grid row
-          if (cDistId !== -1 && cDistName !== -1) {
-            const cell = sheet.getCell(r0, cDistName);
-            if (!String(cell.value ?? "").trim()) {
-              const resolved = distName.get(Number(row.get("distributor_id"))) ?? "";
-              if (resolved) cell.value = resolved;
-              else allDistNamed = false; // keep distributor_id as a fallback
-            }
-          }
-          if (hasVehicle && cVehId !== -1 && cVehNum !== -1) {
-            const cell = sheet.getCell(r0, cVehNum);
-            if (!String(cell.value ?? "").trim()) {
-              const vid = Number(row.get("vehicle_id"));
-              cell.value = vid ? (vehName.get(vid) ?? "") : "";
-            }
-          }
-        }
-        await sheet.saveUpdatedCells();
-      }
-
-      // Delete legacy id columns (rightmost first so indices stay valid).
-      // distributor_id is kept as a fallback if any row couldn't be named.
-      await sheet.loadHeaderRow();
-      const current = sheet.headerValues ?? [];
-      const drop: number[] = [];
-      if (cVehId !== -1) {
-        const i = current.indexOf("vehicle_id");
-        if (i >= 0) drop.push(i);
-      }
-      if (cDistId !== -1 && allDistNamed) {
-        const i = current.indexOf("distributor_id");
-        if (i >= 0) drop.push(i);
-      }
-      for (const idx of drop.sort((a, b) => b - a)) {
-        await sheet.deleteColumns(idx, 1);
-      }
-    } catch (err) {
-      console.warn(`[kcb] Could not replace id columns in ${name}:`, err);
-    }
-  }
-}
-
 async function migrate(): Promise<void> {
   const doc = getDoc();
   await doc.loadInfo();
@@ -263,7 +169,10 @@ async function migrate(): Promise<void> {
   }
 
   await protectSheets(doc);
-  await replaceIdColumnsWithNames(doc);
+  // NOTE: the sheet reads distributor_name/vehicle_number but falls back to
+  // the legacy id columns, so removing those columns is handled by the
+  // separate, admin-triggered /api/cleanup-columns route in small batches —
+  // never here in the blocking startup path, which must stay fast.
   // NOTE: no automatic moving of rows here. Entries only ever move to the
   // Deleted tabs when someone explicitly deletes them in the app — never
   // on startup — so restoring an old sheet version can't silently sweep
@@ -291,7 +200,12 @@ async function migrate(): Promise<void> {
 
 export function ensureMigrated(): Promise<void> {
   if (!globalThis.__kcbSheetsReady) {
-    globalThis.__kcbSheetsReady = migrate();
+    // Don't cache a failed migration — clear it so the next request retries,
+    // instead of the whole app staying down on a transient hiccup.
+    globalThis.__kcbSheetsReady = migrate().catch((err) => {
+      globalThis.__kcbSheetsReady = undefined;
+      throw err;
+    });
   }
   return globalThis.__kcbSheetsReady;
 }
@@ -312,6 +226,106 @@ export async function getWorksheet(title: SheetName): Promise<GoogleSpreadsheetW
     throw new Error(`Worksheet "${title}" not found after migration.`);
   }
   return sheet;
+}
+
+/** Fills distributor_name / vehicle_number from the legacy id columns and then
+ *  removes the id columns — the names-only migration, run ONLY on demand via
+ *  the admin /api/cleanup-columns route (never in the blocking startup path,
+ *  which must stay fast). Ordered so nothing is orphaned: a row's name is
+ *  written before its id is dropped, and distributor_id is only removed once
+ *  every row in a tab has a resolved name. Idempotent and resumable. */
+export async function cleanupLegacyIdColumns(): Promise<Record<string, string>> {
+  await ensureMigrated();
+  const doc = getDoc();
+  const result: Record<string, string> = {};
+
+  const distName = new Map<number, string>();
+  const vehName = new Map<number, string>();
+  for (const r of await doc.sheetsByTitle["Distributors"].getRows()) {
+    distName.set(Number(r.get("id")), String(r.get("name") ?? "").trim());
+  }
+  for (const r of await doc.sheetsByTitle["Vehicles"].getRows()) {
+    vehName.set(Number(r.get("id")), String(r.get("name") ?? "").trim());
+  }
+
+  const tabs: { name: string; hasVehicle: boolean }[] = [
+    { name: "Deliveries", hasVehicle: true },
+    { name: "Payments", hasVehicle: false },
+    { name: "DeletedDeliveries", hasVehicle: true },
+    { name: "DeletedPayments", hasVehicle: false },
+  ];
+
+  for (const { name, hasVehicle } of tabs) {
+    try {
+      const sheet = doc.sheetsByTitle[name];
+      if (!sheet) {
+        result[name] = "missing";
+        continue;
+      }
+      await sheet.loadHeaderRow().catch(() => undefined);
+      const headers = sheet.headerValues ?? [];
+      const cDistId = headers.indexOf("distributor_id");
+      const cVehId = headers.indexOf("vehicle_id");
+      const cDistName = headers.indexOf("distributor_name");
+      const cVehNum = headers.indexOf("vehicle_number");
+      if (cDistId === -1 && cVehId === -1) {
+        result[name] = "already clean";
+        continue;
+      }
+
+      const rows = await sheet.getRows();
+      let allDistNamed = true;
+      if (rows.length > 0) {
+        const maxRow = Math.max(...rows.map((r) => r.rowNumber));
+        await sheet.loadCells({
+          startRowIndex: 1,
+          endRowIndex: maxRow,
+          startColumnIndex: 0,
+          endColumnIndex: headers.length,
+        });
+        for (const row of rows) {
+          const r0 = row.rowNumber - 1;
+          if (cDistId !== -1 && cDistName !== -1) {
+            const cell = sheet.getCell(r0, cDistName);
+            if (!String(cell.value ?? "").trim()) {
+              const resolved = distName.get(Number(row.get("distributor_id"))) ?? "";
+              if (resolved) cell.value = resolved;
+              else allDistNamed = false;
+            }
+          }
+          if (hasVehicle && cVehId !== -1 && cVehNum !== -1) {
+            const cell = sheet.getCell(r0, cVehNum);
+            if (!String(cell.value ?? "").trim()) {
+              const vid = Number(row.get("vehicle_id"));
+              cell.value = vid ? (vehName.get(vid) ?? "") : "";
+            }
+          }
+        }
+        await sheet.saveUpdatedCells();
+      }
+
+      await sheet.loadHeaderRow();
+      const current = sheet.headerValues ?? [];
+      const drop: number[] = [];
+      if (cVehId !== -1) {
+        const i = current.indexOf("vehicle_id");
+        if (i >= 0) drop.push(i);
+      }
+      if (cDistId !== -1 && allDistNamed) {
+        const i = current.indexOf("distributor_id");
+        if (i >= 0) drop.push(i);
+      }
+      for (const idx of drop.sort((a, b) => b - a)) {
+        await sheet.deleteColumns(idx, 1);
+      }
+      result[name] = allDistNamed
+        ? "names filled, id columns removed"
+        : "names filled; some rows unresolved, distributor_id kept";
+    } catch (err) {
+      result[name] = `error: ${(err as Error).message}`;
+    }
+  }
+  return result;
 }
 
 /** Computes the next auto-increment style id for a sheet's rows (max existing id + 1). */
