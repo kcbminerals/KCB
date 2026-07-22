@@ -20,7 +20,7 @@ export default function UserForm() {
           name="username"
           required
           autoComplete="off"
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -31,7 +31,7 @@ export default function UserForm() {
           id="name"
           name="name"
           required
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -45,7 +45,7 @@ export default function UserForm() {
           minLength={6}
           required
           autoComplete="new-password"
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -56,7 +56,7 @@ export default function UserForm() {
           id="role"
           name="role"
           defaultValue="staff"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         >
           <option value="staff">Staff — entries only</option>
           <option value="admin">Admin — full access</option>
@@ -71,7 +71,7 @@ export default function UserForm() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 sm:w-auto sm:px-6 disabled:opacity-60"
+          className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 sm:w-auto sm:px-6 disabled:opacity-60"
         >
           {pending ? "Adding..." : "Add user"}
         </button>

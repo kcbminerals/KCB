@@ -84,7 +84,7 @@ export default function DeliveryForm({
             type="date"
             required
             defaultValue={delivery?.date ?? todayIso()}
-            className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -99,7 +99,7 @@ export default function DeliveryForm({
             suppressHydrationWarning
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function DeliveryForm({
           name="vehicleId"
           value={vehicleId}
           onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         >
           <option value="">— none —</option>
           {vehicles.map((v) => (
@@ -157,7 +157,7 @@ export default function DeliveryForm({
           required
           value={jarsLoaded}
           onChange={(e) => setJarsLoaded(Number(e.target.value) || 0)}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
 
@@ -181,7 +181,7 @@ export default function DeliveryForm({
           required
           value={pricePerJar}
           onChange={(e) => setPricePerJar(Number(e.target.value) || 0)}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
 
@@ -199,12 +199,12 @@ export default function DeliveryForm({
             required
             value={paidAmount}
             onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
           />
           <button
             type="button"
             onClick={() => setPaidAmount(billAmount)}
-            className="whitespace-nowrap rounded-md border border-slate-300 px-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="whitespace-nowrap rounded-md border border-slate-200 px-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
           >
             Full
           </button>
@@ -230,7 +230,7 @@ export default function DeliveryForm({
           id="notes"
           name="notes"
           defaultValue={delivery?.notes ?? ""}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
 
@@ -261,7 +261,7 @@ export default function DeliveryForm({
         <button
           type="submit"
           disabled={pending || distributors.length === 0}
-          className="w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 sm:w-auto sm:px-6 disabled:opacity-60"
+          className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 sm:w-auto sm:px-6 disabled:opacity-60"
         >
           {pending ? "Saving..." : submitLabel}
         </button>

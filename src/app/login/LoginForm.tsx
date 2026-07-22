@@ -18,7 +18,7 @@ export default function LoginForm({ redirectTo }: { redirectTo: string }) {
           name="username"
           autoComplete="username"
           required
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="field"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -31,7 +31,7 @@ export default function LoginForm({ redirectTo }: { redirectTo: string }) {
           type="password"
           autoComplete="current-password"
           required
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="field"
         />
       </div>
       {state?.error && (
@@ -39,11 +39,7 @@ export default function LoginForm({ redirectTo }: { redirectTo: string }) {
           {state.error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 sm:w-auto sm:px-6 disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className="btn-primary mt-1 w-full">
         {pending ? "Signing in..." : "Sign in"}
       </button>
     </form>

@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
         <p className="text-sm text-slate-500">Today, {formatDate(today)}</p>
       </div>
 
@@ -38,30 +38,30 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Jars currently with distributors" value={String(stats.totalJarsOut)} />
-        <div className="flex flex-col justify-center gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col justify-center gap-2 card p-4">
           <p className="text-sm font-medium text-slate-700">Quick actions</p>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/deliveries"
-              className="rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500"
+              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700"
             >
               + New delivery / jars loaded
             </Link>
             <Link
               href="/payments"
-              className="rounded-lg bg-gradient-to-b from-emerald-500 to-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-emerald-500"
+              className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700"
             >
               + Record payment
             </Link>
             <Link
               href="/reports/daily"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               View today&apos;s sales
             </Link>
             <a
               href="/api/backup/download"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               Download backup
             </a>
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
                 href={sheetUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Open Google Sheet ↗
               </a>
@@ -79,17 +79,17 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="card">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-900">Recent deliveries</h2>
-          <Link href="/deliveries" className="text-sm text-sky-600 hover:underline">
+          <Link href="/deliveries" className="text-sm text-blue-600 hover:underline">
             View all
           </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] uppercase tracking-[0.08em] text-slate-400">
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Vehicle</th>
@@ -108,7 +108,7 @@ export default async function DashboardPage() {
                 </tr>
               )}
               {recentDeliveries.map((d) => (
-                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
+                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-slate-50 last:border-0">
                   <td className="px-4 py-2 whitespace-nowrap">
                     {formatDate(d.date)}
                     <div className="text-xs text-slate-400">{formatTime(d.created_at)}</div>

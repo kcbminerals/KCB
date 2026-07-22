@@ -23,16 +23,16 @@ export default async function DeliveriesPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Deliveries</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Deliveries</h1>
         <p className="text-sm text-slate-500">
           Record jars loaded to a vehicle and the payment received.
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 border-t-4 border-t-sky-500 bg-white p-4 shadow-sm">
+      <div className="card border-t-4 border-t-blue-500 p-4">
         {distributors.length === 0 ? (
           <p className="text-sm text-slate-500">
-            <Link href="/distributors/new" className="text-sky-600 hover:underline">
+            <Link href="/distributors/new" className="text-blue-600 hover:underline">
               Add a distributor
             </Link>{" "}
             first, then record deliveries against them.
@@ -46,7 +46,7 @@ export default async function DeliveriesPage({
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-900">All deliveries</h2>
           <form className="flex items-center gap-2 text-sm">
@@ -57,7 +57,7 @@ export default async function DeliveriesPage({
               id="distributorId"
               name="distributorId"
               defaultValue={distributorId ?? ""}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm"
             >
               <option value="">All distributors</option>
               {distributors.map((d) => (
@@ -68,7 +68,7 @@ export default async function DeliveriesPage({
             </select>
             <button
               type="submit"
-              className="rounded-md border border-slate-300 px-2 py-1 text-slate-600 hover:bg-slate-50"
+              className="rounded-md border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-50"
             >
               Apply
             </button>
@@ -77,7 +77,7 @@ export default async function DeliveriesPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] uppercase tracking-[0.08em] text-slate-400">
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Vehicle</th>
@@ -97,7 +97,7 @@ export default async function DeliveriesPage({
                 </tr>
               )}
               {deliveries.map((d) => (
-                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
+                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-slate-50 last:border-0">
                   <td className="px-4 py-2 whitespace-nowrap">
                     {formatDate(d.date)}
                     <div className="text-xs text-slate-400">
@@ -115,7 +115,7 @@ export default async function DeliveriesPage({
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     <Link
                       href={`/deliveries/${d.id}/edit`}
-                      className="mr-3 text-sky-600 hover:underline"
+                      className="mr-3 text-blue-600 hover:underline"
                     >
                       Edit
                     </Link>

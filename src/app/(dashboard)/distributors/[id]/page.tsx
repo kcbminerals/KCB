@@ -122,7 +122,7 @@ export default async function DistributorDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{distributor.name}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{distributor.name}</h1>
             <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
               {distributor.category}
             </span>
@@ -159,14 +159,14 @@ export default async function DistributorDetailPage({
           <PrintButton />
           <Link
             href={`/distributors/${distributorId}/edit`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors text-sm font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors text-sm font-medium hover:bg-slate-50"
           >
             Edit
           </Link>
           <form action={toggleActive}>
             <button
               type="submit"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors text-sm font-medium hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors text-sm font-medium hover:bg-slate-50"
             >
               {distributor.active ? "Deactivate" : "Activate"}
             </button>
@@ -188,7 +188,7 @@ export default async function DistributorDetailPage({
         />
       </div>
 
-      <div className="no-print rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="no-print card p-4">
         <div className="flex flex-wrap items-end gap-3">
           <form className="flex flex-wrap items-end gap-2">
             <div className="flex flex-col gap-1">
@@ -200,7 +200,7 @@ export default async function DistributorDetailPage({
                 name="from"
                 type="date"
                 defaultValue={from ?? ""}
-                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="rounded-md border border-slate-200 px-2 py-1.5 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -212,12 +212,12 @@ export default async function DistributorDetailPage({
                 name="to"
                 type="date"
                 defaultValue={to ?? ""}
-                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="rounded-md border border-slate-200 px-2 py-1.5 text-sm"
               />
             </div>
             <button
               type="submit"
-              className="rounded-lg bg-gradient-to-b from-sky-500 to-sky-600 px-3 py-1.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500"
+              className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700"
             >
               Apply
             </button>
@@ -225,25 +225,25 @@ export default async function DistributorDetailPage({
           <div className="flex flex-wrap gap-2 text-sm">
             <Link
               href={`${basePath}?from=${todayIso()}&to=${todayIso()}`}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               Today
             </Link>
             <Link
               href={`${basePath}?from=${week.from}&to=${week.to}`}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               This week
             </Link>
             <Link
               href={`${basePath}?from=${month.from}&to=${month.to}`}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               This month
             </Link>
             <Link
               href={basePath}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium text-slate-600 hover:bg-slate-50"
             >
               All time
             </Link>
@@ -266,14 +266,14 @@ export default async function DistributorDetailPage({
         />
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="card">
         <div className="border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-900">Ledger — {periodLabel}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] uppercase tracking-[0.08em] text-slate-400">
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Details</th>
                 <th className="px-4 py-2 font-medium text-right">Billed</th>
@@ -289,7 +289,7 @@ export default async function DistributorDetailPage({
                 </tr>
               )}
               {entries.map((e, i) => (
-                <tr key={i} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
+                <tr key={i} className="border-b border-slate-50 transition-colors hover:bg-slate-50 last:border-0">
                   <td className="px-4 py-2 whitespace-nowrap">
                     {formatDate(e.date)}
                     <div className="text-xs text-slate-400">{formatTime(e.created_at)}</div>
@@ -298,7 +298,7 @@ export default async function DistributorDetailPage({
                     <span
                       className={`mr-2 rounded px-1.5 py-0.5 text-xs font-medium ${
                         e.kind === "delivery"
-                          ? "bg-sky-50 text-sky-700"
+                          ? "bg-blue-50 text-blue-700"
                           : "bg-emerald-50 text-emerald-700"
                       }`}
                     >

@@ -57,19 +57,19 @@ export default async function DailyReportPage({
         <div className="no-print flex items-center gap-2 text-sm">
           <Link
             href={`/reports/daily?day=${prevDay}${filterQuery}`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             ← Previous
           </Link>
           <Link
             href={`/reports/daily${filterQuery ? `?${filterQuery.slice(1)}` : ""}`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             Today
           </Link>
           <Link
             href={`/reports/daily?day=${nextDay}${filterQuery}`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             Next →
           </Link>

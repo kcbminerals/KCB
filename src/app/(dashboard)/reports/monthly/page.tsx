@@ -63,19 +63,19 @@ export default async function MonthlyReportPage({
         <div className="no-print flex items-center gap-2 text-sm">
           <Link
             href={`/reports/monthly?month=${prevMonth}${filterQuery}`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             ← Previous
           </Link>
           <Link
             href={`/reports/monthly${filterQuery ? `?${filterQuery.slice(1)}` : ""}`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             This month
           </Link>
           <Link
             href={`/reports/monthly?month=${nextMonth}${filterQuery}`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
           >
             Next →
           </Link>

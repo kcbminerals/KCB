@@ -26,7 +26,7 @@ export default function ReportFilters({
       <select
         name="distributorId"
         defaultValue={distributorId ?? ""}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
+        className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm"
       >
         <option value="">All distributors</option>
         {distributors.map((d) => (
@@ -38,7 +38,7 @@ export default function ReportFilters({
       <select
         name="category"
         defaultValue={category ?? ""}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
+        className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm"
       >
         <option value="">All categories</option>
         {DISTRIBUTOR_CATEGORIES.map((c) => (
@@ -49,7 +49,7 @@ export default function ReportFilters({
       </select>
       <button
         type="submit"
-        className="rounded-lg border border-slate-300 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
+        className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors font-medium hover:bg-slate-50"
       >
         Search
       </button>

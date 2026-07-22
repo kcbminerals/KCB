@@ -24,7 +24,7 @@ export default async function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Reports</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Reports</h1>
         <p className="text-sm text-slate-500">
           Daily, weekly and monthly summaries, plus all-time overviews by distributor and category.
         </p>
@@ -33,7 +33,7 @@ export default async function ReportsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href="/reports/daily"
-          className="rounded-xl border border-slate-200 border-t-4 border-t-sky-500 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          className="rounded-xl border border-slate-200 border-t-4 border-t-blue-500 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
         >
           <h2 className="font-semibold text-slate-900">Daily sales</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -60,7 +60,7 @@ export default async function ReportsPage() {
         </Link>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="card">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-900">All-time category overview</h2>
           <ExportCsvButton
@@ -78,7 +78,7 @@ export default async function ReportsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] uppercase tracking-[0.08em] text-slate-400">
                 <th className="px-4 py-2 font-medium">Category</th>
                 <th className="px-4 py-2 font-medium text-right">Jars out</th>
                 <th className="px-4 py-2 font-medium text-right">Total billed</th>
@@ -89,7 +89,7 @@ export default async function ReportsPage() {
             </thead>
             <tbody>
               {byCategory.map((c) => (
-                <tr key={c.category} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
+                <tr key={c.category} className="border-b border-slate-50 transition-colors hover:bg-slate-50 last:border-0">
                   <td className="px-4 py-2 font-medium text-slate-900">{c.category}</td>
                   <td className="px-4 py-2 text-right">{c.jarBalance}</td>
                   <td className="px-4 py-2 text-right">{formatMoney(c.totalBilled)}</td>
@@ -104,7 +104,7 @@ export default async function ReportsPage() {
                   <td className="px-4 py-2 text-right">
                     <Link
                       href={`/reports/monthly?category=${c.category}`}
-                      className="text-sky-600 hover:underline"
+                      className="text-blue-600 hover:underline"
                     >
                       View month
                     </Link>
@@ -116,7 +116,7 @@ export default async function ReportsPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="card">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-900">
             All-time distributor overview
@@ -147,7 +147,7 @@ export default async function ReportsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] uppercase tracking-[0.08em] text-slate-400">
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Category</th>
                 <th className="px-4 py-2 font-medium text-right">Jars out</th>
@@ -165,7 +165,7 @@ export default async function ReportsPage() {
                 </tr>
               )}
               {distributors.map((d) => (
-                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
+                <tr key={d.id} className="border-b border-slate-50 transition-colors hover:bg-slate-50 last:border-0">
                   <td className="px-4 py-2 font-medium text-slate-900">
                     <Link href={`/distributors/${d.id}`} className="hover:underline">
                       {d.name}

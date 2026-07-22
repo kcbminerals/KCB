@@ -14,17 +14,17 @@ export default async function PaymentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Payments</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Payments</h1>
         <p className="text-sm text-slate-500">
           Record a payment received from a distributor towards their outstanding
           dues (not tied to a specific delivery).
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 border-t-4 border-t-emerald-500 bg-white p-4 shadow-sm">
+      <div className="card border-t-4 border-t-emerald-500 p-4">
         {distributors.length === 0 ? (
           <p className="text-sm text-slate-500">
-            <Link href="/distributors/new" className="text-sky-600 hover:underline">
+            <Link href="/distributors/new" className="text-blue-600 hover:underline">
               Add a distributor
             </Link>{" "}
             first, then record payments against them.
@@ -34,14 +34,14 @@ export default async function PaymentsPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="card">
         <div className="border-b border-slate-200 px-4 py-3">
           <h2 className="font-semibold text-slate-900">Recent payments</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] uppercase tracking-[0.08em] text-slate-400">
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">Distributor</th>
                 <th className="px-4 py-2 font-medium">Method</th>
@@ -59,7 +59,7 @@ export default async function PaymentsPage() {
                 </tr>
               )}
               {payments.map((p) => (
-                <tr key={p.id} className="border-b border-slate-50 transition-colors hover:bg-sky-50/50 last:border-0">
+                <tr key={p.id} className="border-b border-slate-50 transition-colors hover:bg-slate-50 last:border-0">
                   <td className="px-4 py-2 whitespace-nowrap">
                     {formatDate(p.date)}
                     <div className="text-xs text-slate-400">

@@ -16,10 +16,10 @@ export default function NavLink({
   return (
     <Link
       href={href}
-      className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
         active
-          ? "bg-white text-sky-700 shadow-md"
-          : "text-sky-100 hover:bg-white/15 hover:text-white"
+          ? "bg-blue-50 text-blue-700"
+          : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
       }`}
     >
       {children}

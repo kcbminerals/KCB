@@ -40,7 +40,7 @@ export default function DistributorForm({
           name="name"
           required
           defaultValue={distributor?.name}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -51,7 +51,7 @@ export default function DistributorForm({
           id="phone"
           name="phone"
           defaultValue={distributor?.phone ?? ""}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
       <div className="flex flex-col gap-1 sm:col-span-2">
@@ -62,7 +62,7 @@ export default function DistributorForm({
           id="address"
           name="address"
           defaultValue={distributor?.address ?? ""}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -77,7 +77,7 @@ export default function DistributorForm({
           min="0"
           required
           defaultValue={distributor?.price_per_jar ?? ""}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -90,7 +90,7 @@ export default function DistributorForm({
           type="number"
           step="0.01"
           defaultValue={distributor?.opening_balance ?? 0}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
         <p className="text-xs text-slate-400">
           Old dues from before this app — added to their outstanding due.
@@ -105,7 +105,7 @@ export default function DistributorForm({
           name="category"
           required
           defaultValue={distributor?.category ?? DISTRIBUTOR_CATEGORIES[0]}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         >
           {DISTRIBUTOR_CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -118,13 +118,13 @@ export default function DistributorForm({
         <span className="text-sm font-medium text-slate-700">
           Vehicles (tick all that serve this distributor)
           {vehicleIds.length > 0 && (
-            <span className="ml-1.5 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+            <span className="ml-1.5 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
               {vehicleIds.length} selected
             </span>
           )}
         </span>
         {vehicles.length > 0 && (
-          <div className="flex max-h-40 flex-col gap-1.5 overflow-y-auto rounded-lg border border-slate-300 px-3 py-2.5">
+          <div className="flex max-h-40 flex-col gap-1.5 overflow-y-auto rounded-lg border border-slate-200 px-3 py-2.5">
             {vehicles.map((v) => (
               <label
                 key={v.id}
@@ -134,7 +134,7 @@ export default function DistributorForm({
                   type="checkbox"
                   checked={vehicleIds.includes(v.id)}
                   onChange={() => toggleVehicle(v.id)}
-                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
                 {v.name}
                 {v.plate_number ? ` (${v.plate_number})` : ""}
@@ -150,7 +150,7 @@ export default function DistributorForm({
               ? "Or type a new vehicle number to add it"
               : "Type the vehicle number, e.g. KA-01-AB-1234"
           }
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
         <p className="text-xs text-slate-400">
           New vehicle numbers are created and linked when you save — separate
@@ -166,7 +166,7 @@ export default function DistributorForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-xl bg-gradient-to-b from-sky-500 to-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/25 transition hover:from-sky-400 hover:to-sky-500 sm:w-auto sm:px-6 disabled:opacity-60"
+          className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 sm:w-auto sm:px-6 disabled:opacity-60"
         >
           {pending ? "Saving..." : submitLabel}
         </button>
