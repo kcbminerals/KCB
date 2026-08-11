@@ -19,14 +19,27 @@ export default function ReportView({
   filters?: React.ReactNode;
   exportFilename: string;
 }) {
-  const csvHeaders = ["Distributor", "Jars loaded", "Billed", "Collected", "Balance"];
-  const csvRows = report.byDistributor.map((r) => [
-    r.distributor_name,
-    r.jars_loaded,
-    r.billed,
-    r.collected,
-    r.billed - r.collected,
-  ]);
+  const csvHeaders = ["Group", "Jars loaded", "Billed", "Collected", "Balance"];
+  const csvRows: (string | number)[][] = [];
+  // Category breakdown first, then the distributor detail, in one export.
+  for (const c of report.byCategory) {
+    csvRows.push([
+      c.category,
+      c.jars_loaded,
+      c.billed,
+      c.collected,
+      c.billed - c.collected,
+    ]);
+  }
+  for (const r of report.byDistributor) {
+    csvRows.push([
+      r.distributor_name,
+      r.jars_loaded,
+      r.billed,
+      r.collected,
+      r.billed - r.collected,
+    ]);
+  }
   csvRows.push([
     "Total",
     report.totals.jarsLoaded,
@@ -63,6 +76,57 @@ export default function ReportView({
           value={formatMoney(report.totals.collected)}
           tone="good"
         />
+      </div>
+
+      <div className="card">
+        <div className="border-b border-slate-200 px-4 py-3">
+          <h2 className="font-semibold text-slate-900">By category</h2>
+          <p className="text-xs text-slate-400">KCB1 · KCB2 · Enrich</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] uppercase tracking-[0.08em] text-slate-400">
+                <th className="px-4 py-2 font-medium">Category</th>
+                <th className="px-4 py-2 font-medium text-right">Jars loaded</th>
+                <th className="px-4 py-2 font-medium text-right">Billed</th>
+                <th className="px-4 py-2 font-medium text-right">Collected</th>
+                <th className="px-4 py-2 font-medium text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.byCategory.map((c) => (
+                <tr
+                  key={c.category}
+                  className="border-b border-slate-50 transition-colors hover:bg-slate-50 last:border-0"
+                >
+                  <td className="px-4 py-2 font-medium text-slate-900">
+                    <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                      {c.category}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums">{c.jars_loaded}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{formatMoney(c.billed)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{formatMoney(c.collected)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">
+                    {formatMoney(c.billed - c.collected)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-slate-200 font-semibold text-slate-900">
+                <td className="px-4 py-2">Total</td>
+                <td className="px-4 py-2 text-right tabular-nums">{report.totals.jarsLoaded}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{formatMoney(report.totals.billed)}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{formatMoney(report.totals.collected)}</td>
+                <td className="px-4 py-2 text-right tabular-nums">
+                  {formatMoney(report.totals.billed - report.totals.collected)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
 
       <div className="card">

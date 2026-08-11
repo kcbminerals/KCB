@@ -798,6 +798,13 @@ export type ReportRow = {
   collected: number;
 };
 
+export type CategoryRow = {
+  category: DistributorCategory;
+  jars_loaded: number;
+  billed: number;
+  collected: number;
+};
+
 export type Report = {
   from: string;
   to: string;
@@ -808,6 +815,7 @@ export type Report = {
     collected: number;
   };
   byDistributor: ReportRow[];
+  byCategory: CategoryRow[];
 };
 
 export async function getReport(
@@ -884,5 +892,26 @@ export async function getReport(
     { jarsLoaded: 0, jarsReturned: 0, billed: 0, collected: 0 }
   );
 
-  return { from, to, totals, byDistributor };
+  // Category-wise breakdown (KCB1 / KCB2 / Enrich) — always all categories,
+  // shown even when zero, so each product line is visible on every report.
+  const byCategoryMap = new Map<DistributorCategory, CategoryRow>(
+    DISTRIBUTOR_CATEGORIES.map((c) => [c, { category: c, jars_loaded: 0, billed: 0, collected: 0 }])
+  );
+  for (const d of deliveries) {
+    const cat = distributorMap.get(d.distributor_id)?.category;
+    const row = cat && byCategoryMap.get(cat);
+    if (row) {
+      row.jars_loaded += d.jars_loaded;
+      row.billed += d.bill_amount;
+      row.collected += d.paid_amount;
+    }
+  }
+  for (const p of payments) {
+    const cat = distributorMap.get(p.distributor_id)?.category;
+    const row = cat && byCategoryMap.get(cat);
+    if (row) row.collected += p.amount;
+  }
+  const byCategory = Array.from(byCategoryMap.values());
+
+  return { from, to, totals, byDistributor, byCategory };
 }
