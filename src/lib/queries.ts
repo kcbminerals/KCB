@@ -460,6 +460,37 @@ export async function getDelivery(id: number): Promise<DeliveryWithNames | undef
   return rowToDeliveryWithNames(row, makeDistCtx(distributors), makeVehCtx(vehicles));
 }
 
+/** A fresh, never-reused id for a new entry.
+ *
+ *  Two things make plain "max id + 1" unsafe here:
+ *  1. Deleted entries MOVE to the archive tab, so their ids are no longer in
+ *     the main tab — max+1 would hand a new entry an id that a deleted (or
+ *     later restored) entry still holds, and edit/delete-by-id would then
+ *     hit the wrong row.
+ *  2. Two people saving at the same moment would both read the same max and
+ *     get the same id, silently duplicating it.
+ *  So the id is time-based (monotonic, unique per writer) and then bumped
+ *  past anything already in use across BOTH the main and archive tabs. */
+async function nextEntryId(mainName: "Deliveries" | "Payments"): Promise<number> {
+  const archiveName = mainName === "Deliveries" ? "DeletedDeliveries" : "DeletedPayments";
+  const [mainSheet, archiveSheet] = await Promise.all([
+    getWorksheet(mainName),
+    getWorksheet(archiveName),
+  ]);
+  const [mainRows, archiveRows] = await Promise.all([
+    mainSheet.getRows(),
+    archiveSheet.getRows(),
+  ]);
+  const taken = new Set<number>();
+  for (const r of [...mainRows, ...archiveRows]) {
+    const n = num(r, "id");
+    if (n) taken.add(n);
+  }
+  let id = Date.now();
+  while (taken.has(id)) id += 1;
+  return id;
+}
+
 /** The vehicle number stored in the Deliveries tab — the vehicle's name is
  *  its number in this business. Kept plain (no plate suffix) so it reads
  *  back cleanly when resolving the row to a vehicle. */
@@ -479,12 +510,11 @@ export async function createDelivery(data: {
   createdAt?: string | null;
 }): Promise<number> {
   const sheet = await getWorksheet("Deliveries");
-  const [rows, dist, veh] = await Promise.all([
-    sheet.getRows(),
+  const [id, dist, veh] = await Promise.all([
+    nextEntryId("Deliveries"),
     getDistributor(data.distributorId),
     data.vehicleId ? getVehicle(data.vehicleId) : Promise.resolve(undefined),
   ]);
-  const id = nextId(rows);
   const billAmount = data.jarsLoaded * data.pricePerJar;
   await sheet.addRow({
     id,
@@ -499,7 +529,6 @@ export async function createDelivery(data: {
     notes: data.notes ?? "",
     created_at: data.createdAt ?? nowIstTimestamp(),
   });
-  await sortSheetByDate("Deliveries");
   return id;
 }
 
@@ -539,7 +568,6 @@ export async function updateDelivery(
     ...(data.createdAt ? { created_at: data.createdAt } : {}),
   });
   await row.save();
-  await sortSheetByDate("Deliveries");
 }
 
 // Rows may only ever be removed from a tab AFTER a verified copy exists in
@@ -598,7 +626,6 @@ async function restoreFromArchive(
     throw new Error(`Restore copy could not be verified for ${mainName} id ${id}; archive row kept.`);
   }
   await (row as RemovableRow).delete();
-  await sortSheetByDate(mainName);
 }
 
 export async function restoreDelivery(id: number): Promise<void> {
@@ -654,7 +681,9 @@ export async function listDeletedPayments(): Promise<DeletedPayment[]> {
 /** Physically re-sorts the sheet's rows oldest-first by date then time, so
  *  the Google Sheet itself always reads in chronological order. Best-effort:
  *  entry saving must never fail because a cosmetic sort did. */
-async function sortSheetByDate(sheetName: "Deliveries" | "Payments"): Promise<void> {
+export async function sortSheetByDate(
+  sheetName: "Deliveries" | "Payments"
+): Promise<void> {
   try {
     const sheet = await getWorksheet(sheetName);
     const headers = sheet.headerValues ?? [];
@@ -732,11 +761,10 @@ export async function createPayment(data: {
   createdAt?: string | null;
 }): Promise<number> {
   const sheet = await getWorksheet("Payments");
-  const [rows, dist] = await Promise.all([
-    sheet.getRows(),
+  const [id, dist] = await Promise.all([
+    nextEntryId("Payments"),
     getDistributor(data.distributorId),
   ]);
-  const id = nextId(rows);
   await sheet.addRow({
     id,
     date: data.date,
@@ -746,7 +774,6 @@ export async function createPayment(data: {
     notes: data.notes ?? "",
     created_at: data.createdAt ?? nowIstTimestamp(),
   });
-  await sortSheetByDate("Payments");
   return id;
 }
 

@@ -45,9 +45,9 @@ export async function createPaymentAction(
     ...parsed.data,
     createdAt: parsed.data.time ? `${parsed.data.date}T${parsed.data.time}` : null,
   });
-  revalidatePath("/payments");
-  revalidatePath("/");
-  revalidatePath("/distributors");
+  // Revalidate the whole app: a saved entry must be immediately consistent
+  // on every page (reports, ledgers, dashboard) and for every signed-in user.
+  revalidatePath("/", "layout");
 
   // Prepare a ready-to-send WhatsApp receipt for the distributor. The
   // summary is re-read after the save so the balance includes this payment.
