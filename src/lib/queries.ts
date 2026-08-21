@@ -1,5 +1,11 @@
 import "server-only";
-import { getWorksheet, nextId, type SheetName } from "@/lib/sheets";
+import {
+  getWorksheet,
+  readRows,
+  invalidateRows,
+  nextId,
+  type SheetName,
+} from "@/lib/sheets";
 import { nowIstTimestamp, dateSortKey, timeSortKey } from "@/lib/format";
 import type {
   Distributor,
@@ -89,8 +95,7 @@ function rowToDistributor(row: SheetRow): Distributor {
 }
 
 export async function listDistributors(includeInactive = false): Promise<Distributor[]> {
-  const sheet = await getWorksheet("Distributors");
-  const rows = await sheet.getRows();
+  const rows = await readRows("Distributors");
   const distributors = rows
     .map(rowToDistributor)
     .filter((d) => includeInactive || d.active === 1);
@@ -116,8 +121,7 @@ export async function listDistributorsWithVehicle(
 }
 
 export async function getDistributor(id: number): Promise<Distributor | undefined> {
-  const sheet = await getWorksheet("Distributors");
-  const rows = await sheet.getRows();
+  const rows = await readRows("Distributors");
   const row = rows.find((r) => num(r, "id") === id);
   return row ? rowToDistributor(row) : undefined;
 }
@@ -150,6 +154,7 @@ export async function createDistributor(data: {
     active: 1,
     created_at: nowIstTimestamp(),
   });
+  invalidateRows();
   return id;
 }
 
@@ -182,6 +187,7 @@ export async function updateDistributor(
     opening_balance: data.openingBalance ?? 0,
   });
   await row.save();
+  invalidateRows();
   // The Deliveries/Payments tabs store the distributor NAME as the link, so
   // a rename must update every past entry to keep them connected.
   await cascadeRename("distributor_name", oldName, data.name);
@@ -220,6 +226,8 @@ async function cascadeRename(
       console.warn(`[kcb] Rename cascade failed for ${name}:`, err);
     }
   }
+  // The cascade rewrote many entry rows — drop cached reads.
+  invalidateRows();
 }
 
 export async function setDistributorActive(id: number, active: boolean): Promise<void> {
@@ -229,6 +237,7 @@ export async function setDistributorActive(id: number, active: boolean): Promise
   if (!row) return;
   row.set("active", active ? 1 : 0);
   await row.save();
+  invalidateRows();
 }
 
 export async function listDistributorsSummary(
@@ -283,16 +292,14 @@ function rowToVehicle(row: SheetRow): Vehicle {
 }
 
 export async function listVehicles(includeInactive = false): Promise<Vehicle[]> {
-  const sheet = await getWorksheet("Vehicles");
-  const rows = await sheet.getRows();
+  const rows = await readRows("Vehicles");
   const vehicles = rows.map(rowToVehicle).filter((v) => includeInactive || v.active === 1);
   vehicles.sort((a, b) => a.name.localeCompare(b.name));
   return vehicles;
 }
 
 export async function getVehicle(id: number): Promise<Vehicle | undefined> {
-  const sheet = await getWorksheet("Vehicles");
-  const rows = await sheet.getRows();
+  const rows = await readRows("Vehicles");
   const row = rows.find((r) => num(r, "id") === id);
   return row ? rowToVehicle(row) : undefined;
 }
@@ -311,6 +318,7 @@ export async function createVehicle(data: {
     active: 1,
     created_at: nowIstTimestamp(),
   });
+  invalidateRows();
   return id;
 }
 
@@ -325,6 +333,7 @@ export async function updateVehicle(
   const oldName = str(row, "name") ?? "";
   row.assign({ name: data.name, plate_number: data.plateNumber ?? "" });
   await row.save();
+  invalidateRows();
   await cascadeRename("vehicle_number", oldName, data.name);
 }
 
@@ -335,6 +344,7 @@ export async function setVehicleActive(id: number, active: boolean): Promise<voi
   if (!row) return;
   row.set("active", active ? 1 : 0);
   await row.save();
+  invalidateRows();
 }
 
 // ---------- Deliveries ----------
@@ -415,9 +425,8 @@ export async function listDeliveries(filters?: {
   distributorId?: number;
   limit?: number;
 }): Promise<DeliveryWithNames[]> {
-  const sheet = await getWorksheet("Deliveries");
   const [rows, distributors, vehicles] = await Promise.all([
-    sheet.getRows(),
+    readRows("Deliveries"),
     listDistributors(true),
     listVehicles(true),
   ]);
@@ -449,9 +458,8 @@ export async function listDeliveries(filters?: {
 }
 
 export async function getDelivery(id: number): Promise<DeliveryWithNames | undefined> {
-  const sheet = await getWorksheet("Deliveries");
   const [rows, distributors, vehicles] = await Promise.all([
-    sheet.getRows(),
+    readRows("Deliveries"),
     listDistributors(true),
     listVehicles(true),
   ]);
@@ -488,6 +496,7 @@ async function nextEntryId(mainName: "Deliveries" | "Payments"): Promise<number>
   }
   let id = Date.now();
   while (taken.has(id)) id += 1;
+  invalidateRows();
   return id;
 }
 
@@ -529,6 +538,7 @@ export async function createDelivery(data: {
     notes: data.notes ?? "",
     created_at: data.createdAt ?? nowIstTimestamp(),
   });
+  invalidateRows();
   return id;
 }
 
@@ -568,6 +578,7 @@ export async function updateDelivery(
     ...(data.createdAt ? { created_at: data.createdAt } : {}),
   });
   await row.save();
+  invalidateRows();
 }
 
 // Rows may only ever be removed from a tab AFTER a verified copy exists in
@@ -598,6 +609,7 @@ async function moveRowToArchive(
     throw new Error(`Archive copy could not be verified for ${mainName} id ${id}; entry NOT deleted.`);
   }
   await (row as RemovableRow).delete();
+  invalidateRows();
 }
 
 export async function deleteDelivery(id: number): Promise<void> {
@@ -626,6 +638,7 @@ async function restoreFromArchive(
     throw new Error(`Restore copy could not be verified for ${mainName} id ${id}; archive row kept.`);
   }
   await (row as RemovableRow).delete();
+  invalidateRows();
 }
 
 export async function restoreDelivery(id: number): Promise<void> {
@@ -641,9 +654,8 @@ export type DeletedPayment = PaymentWithNames & { deleted_at: string };
 
 /** Archived (deleted) deliveries, newest first — for the Deleted page. */
 export async function listDeletedDeliveries(): Promise<DeletedDelivery[]> {
-  const sheet = await getWorksheet("DeletedDeliveries");
   const [rows, distributors, vehicles] = await Promise.all([
-    sheet.getRows(),
+    readRows("DeletedDeliveries"),
     listDistributors(true),
     listVehicles(true),
   ]);
@@ -663,8 +675,10 @@ export async function listDeletedDeliveries(): Promise<DeletedDelivery[]> {
 
 /** Archived (deleted) payments, newest first — for the Deleted page. */
 export async function listDeletedPayments(): Promise<DeletedPayment[]> {
-  const sheet = await getWorksheet("DeletedPayments");
-  const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
+  const [rows, distributors] = await Promise.all([
+    readRows("DeletedPayments"),
+    listDistributors(true),
+  ]);
   const dctx = makeDistCtx(distributors);
   const payments = rows.map((row) => ({
     ...rowToPaymentWithNames(row, dctx),
@@ -726,8 +740,10 @@ export async function listPayments(filters?: {
   distributorId?: number;
   limit?: number;
 }): Promise<PaymentWithNames[]> {
-  const sheet = await getWorksheet("Payments");
-  const [rows, distributors] = await Promise.all([sheet.getRows(), listDistributors(true)]);
+  const [rows, distributors] = await Promise.all([
+    readRows("Payments"),
+    listDistributors(true),
+  ]);
   const dctx = makeDistCtx(distributors);
 
   let payments = rows
@@ -774,6 +790,7 @@ export async function createPayment(data: {
     notes: data.notes ?? "",
     created_at: data.createdAt ?? nowIstTimestamp(),
   });
+  invalidateRows();
   return id;
 }
 
