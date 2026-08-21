@@ -1,6 +1,10 @@
 import "server-only";
 import { JWT } from "google-auth-library";
-import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from "google-spreadsheet";
+import {
+  GoogleSpreadsheet,
+  GoogleSpreadsheetWorksheet,
+  GoogleSpreadsheetRow,
+} from "google-spreadsheet";
 import bcrypt from "bcryptjs";
 import { nowIstTimestamp } from "@/lib/format";
 
@@ -162,7 +166,7 @@ async function protectSheets(doc: GoogleSpreadsheet): Promise<void> {
 
 async function migrate(): Promise<void> {
   const doc = getDoc();
-  await doc.loadInfo();
+  await withRetry(() => doc.loadInfo());
 
   for (const title of Object.keys(SHEET_SCHEMAS) as SheetName[]) {
     await ensureSheet(doc, title);
@@ -179,7 +183,7 @@ async function migrate(): Promise<void> {
   // live entries into the archive.
 
   const usersSheet = doc.sheetsByTitle["Users"];
-  const userRows = await usersSheet.getRows();
+  const userRows = await withRetry(() => usersSheet.getRows());
   if (userRows.length === 0) {
     const defaultPassword = "kcb1234";
     const hash = bcrypt.hashSync(defaultPassword, 10);
@@ -336,4 +340,73 @@ export function nextId(rows: { get(key: string): unknown }[]): number {
     if (Number.isFinite(id) && id > max) max = id;
   }
   return max + 1;
+}
+
+// ---------- Read cache + rate-limit resilience ----------
+//
+// Every page render used to hit the Sheets API once per tab per query (a
+// dashboard view alone cost ~9 reads). Google allows only 60 reads/minute
+// per service account, so a few people using the app at once exhausted the
+// quota and Google replied 429 — surfacing as "This page couldn't load".
+//
+// IMPORTANT: cached rows carry the row POSITION they had when fetched, and
+// the client writes by position. So the cache is for READ paths only —
+// every write path must fetch rows fresh and then invalidate.
+
+type CacheEntry = { at: number; rows: GoogleSpreadsheetRow[] };
+
+const ROW_CACHE_TTL_MS = 5_000;
+const rowCache = new Map<SheetName, CacheEntry>();
+const inflight = new Map<SheetName, Promise<GoogleSpreadsheetRow[]>>();
+
+function isRetryable(err: unknown): boolean {
+  const status = (err as { response?: { status?: number }; status?: number })
+    ?.response?.status ?? (err as { status?: number })?.status;
+  return status === 429 || status === 403 || (typeof status === "number" && status >= 500);
+}
+
+/** Retries a Sheets call on quota/transient errors with exponential backoff,
+ *  so a momentary rate-limit blip doesn't turn into a broken page. */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err) || i === attempts - 1) throw err;
+      await new Promise((r) => setTimeout(r, 300 * 2 ** i + Math.random() * 200));
+    }
+  }
+  throw lastErr;
+}
+
+/** Rows for a tab, served from a short-lived cache and de-duplicated across
+ *  concurrent callers. READ-ONLY — never pass these rows to save()/delete(). */
+export async function readRows(title: SheetName): Promise<GoogleSpreadsheetRow[]> {
+  const hit = rowCache.get(title);
+  if (hit && Date.now() - hit.at < ROW_CACHE_TTL_MS) return hit.rows;
+
+  const pending = inflight.get(title);
+  if (pending) return pending;
+
+  const load = (async () => {
+    const sheet = await getWorksheet(title);
+    const rows = await withRetry(() => sheet.getRows());
+    rowCache.set(title, { at: Date.now(), rows });
+    return rows;
+  })();
+  inflight.set(title, load);
+  try {
+    return await load;
+  } finally {
+    inflight.delete(title);
+  }
+}
+
+/** Drops cached rows so the next read reflects a just-saved change.
+ *  Call after every write. */
+export function invalidateRows(title?: SheetName): void {
+  if (title) rowCache.delete(title);
+  else rowCache.clear();
 }
