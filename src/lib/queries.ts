@@ -798,6 +798,74 @@ export async function deletePayment(id: number): Promise<void> {
   await moveRowToArchive("Payments", id);
 }
 
+export type Receipt = {
+  source: "payment" | "delivery";
+  id: number;
+  date: string;
+  created_at: string;
+  distributor_id: number;
+  distributor_name: string;
+  amount: number;
+  method: string | null;
+  notes: string | null;
+};
+
+/** Every rupee received, from both places money can come in: standalone
+ *  payments AND the amount collected on a delivery slip. Delivery cash has
+ *  always counted towards dues and reports, but it had no row on the
+ *  Payments page, so it looked missing. */
+export async function listReceipts(filters?: {
+  from?: string;
+  to?: string;
+  distributorId?: number;
+  limit?: number;
+}): Promise<Receipt[]> {
+  const range = {
+    from: filters?.from,
+    to: filters?.to,
+    distributorId: filters?.distributorId,
+  };
+  const [payments, deliveries] = await Promise.all([
+    listPayments(range),
+    listDeliveries(range),
+  ]);
+
+  const receipts: Receipt[] = [
+    ...payments.map((p) => ({
+      source: "payment" as const,
+      id: p.id,
+      date: p.date,
+      created_at: p.created_at,
+      distributor_id: p.distributor_id,
+      distributor_name: p.distributor_name,
+      amount: p.amount,
+      method: p.method,
+      notes: p.notes,
+    })),
+    ...deliveries
+      .filter((d) => d.paid_amount > 0)
+      .map((d) => ({
+        source: "delivery" as const,
+        id: d.id,
+        date: d.date,
+        created_at: d.created_at,
+        distributor_id: d.distributor_id,
+        distributor_name: d.distributor_name,
+        amount: d.paid_amount,
+        method: null,
+        notes: `${d.jars_loaded} jars${d.vehicle_name ? ` \u00b7 ${d.vehicle_name}` : ""}`,
+      })),
+  ];
+
+  receipts.sort((a, b) => {
+    const d = dateSortKey(b.date) - dateSortKey(a.date);
+    if (d !== 0) return d;
+    return timeSortKey(b.created_at) - timeSortKey(a.created_at) || b.id - a.id;
+  });
+
+  return filters?.limit ? receipts.slice(0, filters.limit) : receipts;
+}
+
 // ---------- Reports & Dashboard ----------
 
 export async function getDashboardStats(todayIso: string) {
